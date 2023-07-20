@@ -21,3 +21,5 @@
 
 --macro include('esb.core', false)
 --macro include('esb.core.bodies', false)
+
+-cmd copy esb.json ..\..\..\build\config\esb.json
