@@ -10,7 +10,6 @@ using StringTools;
 @:jsRequire("./esb-core.js", "esb.core.bodies.JsonBody")
 extern class JsonBody extends RawBody {
     public var data:Dynamic;
-    public function someJsonOperation():Void;
     public function fields():Array<String>;
     public function value(path:String, defaultValue:Any = null):Any;
     public function set(path:String, value:Any = null):Void;
