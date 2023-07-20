@@ -94,12 +94,18 @@ class UriObject {
     }
 
     public function toString():String {
-        var s = prefix + "://";
+        var s = prefix;
+        if (!prefix.startsWith("{{") && !prefix.endsWith("}}")) {
+            s += "://";
+        }
         s += path;
         if (params != null) {
-            s += "?";
-            var paramArray = [];
+            var paramArray = null;
             for (key in params.keys()) {
+                if (paramArray == null) {
+                    paramArray = [];
+                    s += "?";
+                }
                 var value = params.get(key);
                 if (value == null) {
                     paramArray.push('${key}');
@@ -107,7 +113,9 @@ class UriObject {
                     paramArray.push('${key}=${value}');
                 }
             }
-            s += paramArray.join("&");
+            if (paramArray != null) {
+                s += paramArray.join("&");
+            }
         }
         return s;
     }
