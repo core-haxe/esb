@@ -1,5 +1,6 @@
 package esb.core;
 
+import esb.core.bodies.StringBody;
 import esb.core.bodies.JsonBody;
 import esb.common.Uri;
 import promises.Promise;
@@ -172,13 +173,11 @@ class Bus {
             return m;
         });
 
-        /*
-        registerBodyConverter(RawBody, JsonBody, (raw) -> {
-            var json = new JsonBody();
-            json.data = haxe.Json.parse(raw.bytes.toString());
-            return json;
+        registerMessageType(StringBody, () -> {
+            var m = new Message<StringBody>();
+            m.body = new StringBody();
+            return m;
         });
-        */
     }    
 }
 
