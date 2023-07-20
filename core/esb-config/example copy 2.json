@@ -1,0 +1,17 @@
+{
+    "uri": {
+        "import": ["uri1.json", "uri2.json"],
+        "prefixes": {
+            "import": ["prefixes.*\\.json"],
+            "file": {
+                "consumer": "bundle-files",
+                "producer": "bundle-files"
+            },
+            "queue": {
+                "consumer": "internal",
+                "producer": "internal"
+            }
+        },
+        "other": ["tim"]
+    }
+}

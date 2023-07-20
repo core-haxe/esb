@@ -1,0 +1,19 @@
+--js ../../build/bootstrapper.js
+--main Bootstrap
+
+--library hxnodejs
+--library promises
+
+--class-path .
+--class-path ../esb-logging
+--class-path ../esb-ipc
+--class-path ../esb-config
+--class-path ../../common/esb-common
+
+-D no-deprecation-warnings
+-D esb-bundle-manager-impl
+-D shallow-expose
+
+--dce full
+
+--macro include('esb.core')

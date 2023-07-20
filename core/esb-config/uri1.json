@@ -1,0 +1,9 @@
+{
+    "prefixes": {
+        "uri1": {
+            "consumer": "imported-consumer"
+        }
+    },
+    "other": ["bob"],
+    "some other field": "billy"
+}

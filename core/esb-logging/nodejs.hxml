@@ -1,0 +1,14 @@
+--js ../../build/esb-logging.js
+
+--library logging
+--library hxnodejs
+
+--class-path .
+
+-D no-deprecation-warnings
+-D esb-logging-impl
+-D shallow-expose
+
+--dce full
+
+--macro include('esb.logging')

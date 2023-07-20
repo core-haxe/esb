@@ -1,0 +1,17 @@
+--js ../../build/esb-queues.js
+
+--library promises
+--library hxnodejs
+--library queues-core
+--library queues-rabbitmq
+--library rabbitmq
+
+--class-path .
+
+-D no-deprecation-warnings
+-D esb-queues-impl
+-D shallow-expose
+
+--dce std
+
+--macro include('esb.queues')

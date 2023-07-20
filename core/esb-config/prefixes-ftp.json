@@ -1,0 +1,6 @@
+{
+    "ftp": {
+        "consumer": "bundle-ftp",
+        "producer": "bundle-ftp"
+    }
+}

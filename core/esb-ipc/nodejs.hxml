@@ -1,0 +1,15 @@
+--js ../../build/esb-ipc.js
+
+--library hxnodejs
+--library promises
+
+--class-path .
+--class-path ../../common/esb-common
+
+-D no-deprecation-warnings
+-D esb-ipc-impl
+-D shallow-expose
+
+--dce full
+
+--macro include('esb.core.ipc')

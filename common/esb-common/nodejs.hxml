@@ -1,0 +1,12 @@
+--js ../../build/esb-common.js
+
+--library uuid
+--class-path .
+
+-D no-deprecation-warnings
+-D esb-common-impl
+-D shallow-expose
+
+--dce full
+
+--macro include('esb.common')
