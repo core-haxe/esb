@@ -1,4 +1,4 @@
---js ../../build/esb-ipc.js
+--js ../../../build/esb-ipc.js
 
 --library hxnodejs
 --library promises

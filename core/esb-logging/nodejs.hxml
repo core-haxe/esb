@@ -1,4 +1,4 @@
---js ../../build/esb-logging.js
+--js ../../../build/esb-logging.js
 
 --library logging
 --library hxnodejs

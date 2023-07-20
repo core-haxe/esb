@@ -1,6 +1,0 @@
-{
-    "http": {
-        "consumer": "bundle-http",
-        "producer": "bundle-http"
-    }
-}

@@ -1,5 +1,4 @@
---js ../../build/esb-config.js
---main Test
+--js ../../../build/esb-config.js
 
 --library hxnodejs
 --library json2object

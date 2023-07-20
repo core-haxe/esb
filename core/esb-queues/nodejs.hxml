@@ -1,4 +1,4 @@
---js ../../build/esb-queues.js
+--js ../../../build/esb-queues.js
 
 --library promises
 --library hxnodejs

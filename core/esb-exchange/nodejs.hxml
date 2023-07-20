@@ -1,4 +1,4 @@
---js ../../build/esb-exchange.js
+--js ../../../build/esb-exchange.js
 
 --library promises
 --library hxnodejs
