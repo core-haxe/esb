@@ -1,4 +1,4 @@
---js ../../build/esb-common.js
+--js ../../../build/esb-common.js
 
 --library uuid
 --class-path .

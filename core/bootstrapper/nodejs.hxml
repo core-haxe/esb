@@ -1,4 +1,4 @@
---js ../../build/bootstrapper.js
+--js ../../../build/bootstrapper.js
 --main Bootstrap
 
 --library hxnodejs
