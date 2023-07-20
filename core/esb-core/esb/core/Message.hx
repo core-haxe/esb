@@ -3,7 +3,6 @@ package esb.core;
 import haxe.io.Bytes;
 import haxe.Unserializer;
 import haxe.Serializer;
-import haxe.Constraints;
 import esb.core.bodies.RawBody;
 
 @:keep
