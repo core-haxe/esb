@@ -134,19 +134,21 @@ class Pm2BundleManager {
         });
     }
 
-    public static function startEndpoint(uri:Uri, producer:Bool):Promise<Bool> {
+    public static function startEndpoint(uri:Uri, producer:Bool, originalUri:Uri):Promise<Bool> {
         return new Promise((resolve, reject) -> {
-            var bundleConfig = EsbConfig.get().findBundleFromPrefix(uri.prefix, producer);
+            var bundleConfig = EsbConfig.get().findBundleFromPrefix(originalUri.prefix, producer);
             if (bundleConfig == null) {
                 reject("no bundle config found");
                 return;
             }
 
-            var bundleFile:String = bundleConfig.bundleFile;
-            if (bundleFile == "internal") {
+            var prefixConfig = bundleConfig.getPrefix(originalUri.prefix, producer);
+            if (prefixConfig.internal) {
                 resolve(true);
                 return;
             }
+
+            var bundleFile:String = bundleConfig.bundleFile;
             if (!bundleFile.endsWith(".js")) {
                 bundleFile += ".js";
             }
@@ -176,7 +178,7 @@ class Pm2BundleManager {
                         script: bundleFile,
                         args: [
                             "--json-config",
-                            '{"type":"${type}","uri":"${uri.toString()}"}'
+                            '{"type":"${type}","uri":"${uri.toString()}", "originalUri": "${originalUri.toString()}"}'
                         ],
                         watch: true,
                         //namespace: type

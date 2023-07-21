@@ -31,23 +31,23 @@ class BundleManager {
         });
     }
 
-    public static function startEndpoint(uri:Uri, producer:Bool):Promise<Bool> {
+    public static function startEndpoint(uri:Uri, producer:Bool, originalUri:Uri):Promise<Bool> {
         return new Promise((resolve, reject) -> {
             var cacheKey = uri.toString() + "_" + (producer == true ? "producer" : "consumer");
             if (_cachedEnpointsStarted.exists(cacheKey)) {
                 resolve(true);
                 return;
             }
-            _startEndpoint(uri, producer, resolve, reject);
+            _startEndpoint(uri, producer, originalUri, resolve, reject);
         });
     }
 
     private static var _cachedEnpointsStarted:Map<String, Bool> = [];
-    private static var _deferredStartEndpoint:Array<{uri:Uri, producer:Bool, resolve:Dynamic, reject:Dynamic}> = [];
+    private static var _deferredStartEndpoint:Array<{uri:Uri, producer:Bool, originalUri:Uri, resolve:Dynamic, reject:Dynamic}> = [];
     private static var _startingEndpoint:Bool = false;
-    private static function _startEndpoint(uri:Uri, producer:Bool, resolve:Dynamic, reject:Dynamic) {
+    private static function _startEndpoint(uri:Uri, producer:Bool, originalUri:Uri, resolve:Dynamic, reject:Dynamic) {
         if (_startingEndpoint == true) {
-            _deferredStartEndpoint.push({uri: uri, producer: producer, resolve: resolve, reject: reject});
+            _deferredStartEndpoint.push({uri: uri, producer: producer, originalUri: originalUri, resolve: resolve, reject: reject});
             return;
         }
         _startingEndpoint = true;
@@ -77,7 +77,8 @@ class BundleManager {
         start().then(_ -> {
             clientChannel.send("bundle.startEndpoint", {
                 uri: uri.toString(),
-                producer: producer
+                producer: producer,
+                originalUri: originalUri.toString()
             }).then(result -> {
                 //if (producer == true) {
                     _cachedEnpointsStarted.set(cacheKey, true);
@@ -86,7 +87,7 @@ class BundleManager {
                 resolve(true);
                 if (_deferredStartEndpoint.length > 0) {
                     var details = _deferredStartEndpoint.shift();
-                    _startEndpoint(details.uri, details.producer, details.resolve, details.reject);
+                    _startEndpoint(details.uri, details.producer, details.originalUri, details.resolve, details.reject);
                 }
             }, error -> {
                 trace(">>>>>>>>>>>>>>>>>>>>>> ERROR", error);
@@ -94,7 +95,7 @@ class BundleManager {
                 reject(error);
                 if (_deferredStartEndpoint.length > 0) {
                     var details = _deferredStartEndpoint.shift();
-                    _startEndpoint(details.uri, details.producer, details.resolve, details.reject);
+                    _startEndpoint(details.uri, details.producer, details.originalUri, details.resolve, details.reject);
                 }
             });
         }, error -> {
@@ -103,7 +104,7 @@ class BundleManager {
             reject(error);
             if (_deferredStartEndpoint.length > 0) {
                 var details = _deferredStartEndpoint.shift();
-                _startEndpoint(details.uri, details.producer, details.resolve, details.reject);
+                _startEndpoint(details.uri, details.producer, details.originalUri, details.resolve, details.reject);
             }
         });
     }
@@ -152,6 +153,7 @@ class BundleManager {
                 case "bundle.startEndpoint":
                     var uri = Uri.fromString(payload.uri);
                     var producer = payload.producer;
+                    var originalUri = Uri.fromString(payload.originalUri);
                     var cacheKey = uri.toString() + "_" + (producer == true ? "producer" : "consumer");
                     if (_initializingMap.exists(cacheKey)) {
                         _initializingMap.get(cacheKey).push({resolve: resolve, reject: reject});
@@ -159,7 +161,7 @@ class BundleManager {
                     }
         
                     _initializingMap.set(cacheKey, []);
-                    startEndpoint(uri, producer).then(_ -> {
+                    startEndpoint(uri, producer, originalUri).then(_ -> {
                         for (details in _initializingMap.get(cacheKey)) {
                             details.resolve(payload);
                         }
@@ -187,35 +189,35 @@ class BundleManager {
         return esb.core.pm2.Pm2BundleManager.stopBundle(bundleConfig);
     }
 
-    public static function startEndpoint(uri:Uri, producer:Bool):Promise<Bool> {
+    public static function startEndpoint(uri:Uri, producer:Bool, originalUri:Uri):Promise<Bool> {
         return new Promise((resolve, reject) -> {
-            _startEndpoint(uri, producer, resolve, reject);
+            _startEndpoint(uri, producer, originalUri, resolve, reject);
         });
 
-        return esb.core.pm2.Pm2BundleManager.startEndpoint(uri, producer);
+        return esb.core.pm2.Pm2BundleManager.startEndpoint(uri, producer, originalUri);
     }
 
-    private static var _deferredStartEndpoint:Array<{uri:Uri, producer:Bool, resolve:Dynamic, reject:Dynamic}> = [];
+    private static var _deferredStartEndpoint:Array<{uri:Uri, producer:Bool, originalUri:Uri, resolve:Dynamic, reject:Dynamic}> = [];
     private static var _startingEndpoint:Bool = false;
-    private static function _startEndpoint(uri:Uri, producer:Bool, resolve:Dynamic, reject:Dynamic) {
+    private static function _startEndpoint(uri:Uri, producer:Bool, originalUri:Uri, resolve:Dynamic, reject:Dynamic) {
         if (_startingEndpoint == true) {
-            _deferredStartEndpoint.push({uri: uri, producer: producer, resolve: resolve, reject: reject});
+            _deferredStartEndpoint.push({uri: uri, producer: producer, originalUri: originalUri, resolve: resolve, reject: reject});
             return;
         }
         _startingEndpoint = true;
-        esb.core.pm2.Pm2BundleManager.startEndpoint(uri, producer).then(success -> {
+        esb.core.pm2.Pm2BundleManager.startEndpoint(uri, producer, originalUri).then(success -> {
             _startingEndpoint = false;
             resolve(success);
             if (_deferredStartEndpoint.length > 0) {
                 var details = _deferredStartEndpoint.shift();
-                _startEndpoint(details.uri, details.producer, details.resolve, details.reject);
+                _startEndpoint(details.uri, details.producer, details.originalUri, details.resolve, details.reject);
             }
         }, error -> {
             _startingEndpoint = false;
             reject(error);
             if (_deferredStartEndpoint.length > 0) {
                 var details = _deferredStartEndpoint.shift();
-                _startEndpoint(details.uri, details.producer, details.resolve, details.reject);
+                _startEndpoint(details.uri, details.producer, details.originalUri, details.resolve, details.reject);
             }
         });
     }

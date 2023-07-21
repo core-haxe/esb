@@ -30,8 +30,20 @@ class Bus {
     private static var log:esb.logging.Logger = new esb.logging.Logger("esb.core.Bus");
 
     public static function from(uri:Uri, callback:Message<RawBody>->Promise<Message<RawBody>>) {
-        BundleManager.startEndpoint(uri, true).then(_ -> {
-            var endpoint = uri.asEndpoint();
+        var effectiveUri = uri.clone();
+        var bundlePrefixConfig = esb.core.config.sections.EsbConfig.get().findPrefix(uri.prefix, true);
+        if (bundlePrefixConfig != null && bundlePrefixConfig.uri != null) {
+            effectiveUri = Uri.fromString(bundlePrefixConfig.uri);
+            effectiveUri.params = uri.params;
+            // TODO: temp
+            if (effectiveUri.path.contains("{port}")) {
+                var port = uri.path.split(":").pop();
+                effectiveUri.path = effectiveUri.path.replace("{port}", port);
+            }
+        }
+    
+        BundleManager.startEndpoint(effectiveUri, true, uri).then(_ -> {
+            var endpoint = effectiveUri.asEndpoint();
             var queueType = "rabbitmq-queue";
             var queueConfig:Dynamic = {
                 brokerUrl: "amqp://localhost",
@@ -45,6 +57,7 @@ class Bus {
                     return new Promise((resolve, reject) -> {
                         try {
                             var message = createMessage(RawBody);
+                            message.properties.set(BusProperties.SourceUri, uri.toString());
                             message.unserialize(data);
                             callback(message).then(result -> {
                                 esb.core.exchange.ExchangePatternFactory.create(endpoint, false).then(exchangePattern -> {
@@ -78,8 +91,16 @@ class Bus {
 
     public static function to(uri:Uri, message:Message<RawBody>):Promise<Message<RawBody>> {
         return new Promise((resolve, reject) -> {
-            BundleManager.startEndpoint(uri, false).then(_ -> {
-                var endpoint = uri.asEndpoint();
+            var effectiveUri = uri.clone();
+            message.properties.set(BusProperties.DestinationUri, uri.toString());
+            var bundlePrefixConfig = esb.core.config.sections.EsbConfig.get().findPrefix(uri.prefix, false);
+            if (bundlePrefixConfig != null && bundlePrefixConfig.uri != null) {
+                effectiveUri = Uri.fromString(bundlePrefixConfig.uri);
+                effectiveUri.params = uri.params;
+            }
+
+            BundleManager.startEndpoint(effectiveUri, false, uri).then(_ -> {
+                var endpoint = effectiveUri.asEndpoint();
                 esb.core.exchange.ExchangePatternFactory.create(endpoint, true).then(exchangePattern -> {
                     var correlationId = message.correlationId;
                     exchangePattern.sendMessage(message).then(response -> {

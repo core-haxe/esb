@@ -63,9 +63,13 @@ class Bundle implements IBundle {
         if (jsonConfig != null) {
             var uri = Uri.fromString(jsonConfig.uri);
             var producer = (jsonConfig.type == "producer");
-            var bundleConfig = EsbConfig.get().findBundleFromPrefix(uri.prefix, producer);
-            if (bundleConfig != null && bundleConfig.hasPrefix(uri.prefix, producer)) {
-                var prefixConfig = bundleConfig.getPrefix(uri.prefix, producer);
+            var originalUri = uri;
+            if (jsonConfig.originalUri != null) {
+                originalUri = Uri.fromString(jsonConfig.originalUri);
+            }
+            var bundleConfig = EsbConfig.get().findBundleFromPrefix(originalUri.prefix, producer);
+            if (bundleConfig != null && bundleConfig.hasPrefix(originalUri.prefix, producer)) {
+                var prefixConfig = bundleConfig.getPrefix(originalUri.prefix, producer);
                 if (prefixConfig != null && !prefixConfig.internal) {
                     var className = prefixConfig.className;
                     if (className != null) {

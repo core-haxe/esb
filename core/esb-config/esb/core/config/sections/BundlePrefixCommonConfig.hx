@@ -7,6 +7,7 @@ extern class BundlePrefixCommonConfig {
     public function new();
     public var className:String;
     public var internal:Bool;
+    public var uri:String;
     public var bundle(get, null):BundleConfig;
 }
 
@@ -17,6 +18,7 @@ extern class BundlePrefixCommonConfig {
 class BundlePrefixCommonConfig {
     @:alias("class") public var className:String;
     public var internal:Bool;
+    public var uri:String;
 
     @:jignored private var _parent:BundlePrefixConfig = null;
     private var parent(get, set):BundlePrefixConfig;
