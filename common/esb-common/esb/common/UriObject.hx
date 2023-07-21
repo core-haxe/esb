@@ -17,6 +17,7 @@ extern class UriObject {
     public function paramBool(name:String, defaultValue:Null<Bool>):Null<Bool>;
     public function asEndpoint():String;
     public function toString():String;
+    public function clone():Uri;
     public static function fromString(uri:String):Uri;
 }
 
@@ -118,6 +119,10 @@ class UriObject {
             }
         }
         return s;
+    }
+
+    public function clone():Uri {
+        return Uri.fromString(this.toString());
     }
 
     public static function fromString(uri:String):UriObject {
