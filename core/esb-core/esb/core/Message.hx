@@ -12,8 +12,10 @@ class Message<T:RawBody> {
     public var correlationId:String;
     public var properties:Map<String, Any> = [];
     public var headers:Map<String, Any> = [];
+    public var bodyType:String = Type.getClassName(RawBody);
 
     public var body:T;
+
     private function new() {
     }
 
@@ -23,6 +25,7 @@ class Message<T:RawBody> {
         serializer.serialize(correlationId);
         serializer.serialize(properties);
         serializer.serialize(headers);
+        serializer.serialize(bodyType);
 
         var newBytes = null;
         var bytes = body.toBytes();
@@ -40,6 +43,7 @@ class Message<T:RawBody> {
         correlationId = unserializer.unserialize();
         properties = unserializer.unserialize();
         headers = unserializer.unserialize();
+        bodyType = unserializer.unserialize();
         var bytes:Bytes = unserializer.unserialize();
         body.fromBytes(bytes);
     }

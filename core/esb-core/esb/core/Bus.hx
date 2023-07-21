@@ -18,6 +18,7 @@ extern class Bus {
     public static function registerMessageType<T:RawBody>(bodyType:Class<T>, ctor:Void->Message<T>):Void;
     public static function createMessage<T:RawBody>(bodyType:Class<T>):Message<T>;
     public static function convertMessage<T:RawBody>(message:Message<RawBody>, bodyType:Class<T>):Message<T>;
+    public static function convertMessageUsingStringType<T:RawBody>(message:Message<RawBody>, bodyType:String):Message<T>;
     public static function registerBodyConverter<T1:RawBody, T2:RawBody>(from:Class<T1>, to:Class<T2>, fn:T1->T2):Void;
 }
 
@@ -149,6 +150,7 @@ class Bus {
         if (messageTypes.exists(className)) {
             var fn = messageTypes.get(className);
             newMessage = fn();
+            newMessage.bodyType = className;
         } else {
             log.warn('could not convert message of type "${className}", no type registered, using raw');
         }
@@ -166,6 +168,14 @@ class Bus {
         }
 
         return cast newMessage;
+    }
+
+    public static function convertMessageUsingStringType<T:RawBody>(message:Message<RawBody>, bodyType:String):Message<T> {
+        var bodyTypeClass = Type.resolveClass(message.bodyType);
+        if (bodyTypeClass == null) {
+            return cast message;
+        }
+        return convertMessage(message, bodyTypeClass);
     }
 
     private static var bodyConverters:Map<String, RawBody->RawBody> = [];

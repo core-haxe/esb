@@ -106,15 +106,19 @@ class InOut implements IExchangePattern {
         return new Promise((resolve, reject) -> {
             var message = Bus.createMessage(RawBody);
             message.unserialize(data);
-            log.info('message received on response queue for ${this.endpoint} (correlationId: ${message.correlationId})');
-            var info = _correlationMap.get(message.correlationId);
+            var finalMessage = message;
+            if (message.bodyType != Type.getClassName(Type.getClass(message.body))) {
+                finalMessage = Bus.convertMessageUsingStringType(message, message.bodyType);
+            }
+            log.info('message received on response queue for ${this.endpoint} (correlationId: ${finalMessage.correlationId})');
+            var info = _correlationMap.get(finalMessage.correlationId);
             if (info == null) {
                 log.info("no correlation info");
                 responseQ.requeue(data);
                 resolve(true);
             } else {
-                _correlationMap.remove(message.correlationId);
-                info.resolve(message);
+                _correlationMap.remove(finalMessage.correlationId);
+                info.resolve(finalMessage);
                 resolve(true);
             }
         });
