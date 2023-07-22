@@ -29,7 +29,7 @@ class BundleLoader {
                     trace("ERROR: Could not create bundle instance");
                 }
             } else {
-                trace("ERROR: Could not resolve bundle class: ", bundleConfig.bundleEntryPoint);
+                trace("ERROR: Could not resolve bundle class: " + bundleConfig.bundleEntryPoint);
             }
         }
 

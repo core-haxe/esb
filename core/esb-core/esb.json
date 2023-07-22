@@ -11,6 +11,16 @@
                         "internal": true
                     }
                 }
+            },
+            "types": {
+                "bodies": {
+                    "raw": {
+                        "class": "esb.core.bodies.RawBody"
+                    },
+                    "json": {
+                        "class": "esb.core.bodies.JsonBody"
+                    }
+                }
             }
         }
     },

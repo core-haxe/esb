@@ -1,5 +1,6 @@
 package esb.core;
 
+import esb.core.bodies.CsvBody;
 import esb.core.bodies.StringBody;
 import esb.core.bodies.JsonBody;
 import esb.common.Uri;
@@ -17,7 +18,8 @@ extern class Bus {
 
     public static function registerMessageType<T:RawBody>(bodyType:Class<T>, ctor:Void->Message<T>):Void;
     public static function createMessage<T:RawBody>(bodyType:Class<T>):Message<T>;
-    public static function convertMessage<T:RawBody>(message:Message<RawBody>, bodyType:Class<T>):Message<T>;
+    public static function convertMessage<T:RawBody>(message:Message<RawBody>, bodyType:Class<T>, applyBody:Bool = true):Message<T>;
+    public static function canConvertMessage<T:RawBody>(message:Message<RawBody>, bodyType:Class<T>):Bool;
     public static function convertMessageUsingStringType<T:RawBody>(message:Message<RawBody>, bodyType:String):Message<T>;
     public static function registerBodyConverter<T1:RawBody, T2:RawBody>(from:Class<T1>, to:Class<T2>, fn:T1->T2):Void;
 }
@@ -143,7 +145,7 @@ class Bus {
         return cast m;
     }
 
-    public static function convertMessage<T:RawBody>(message:Message<RawBody>, bodyType:Class<T>):Message<T> {
+    public static function convertMessage<T:RawBody>(message:Message<RawBody>, bodyType:Class<T>, applyBody:Bool = true):Message<T> {
         var newMessage = new Message<RawBody>();
         newMessage.body = new RawBody();
         var className = Type.getClassName(bodyType);
@@ -159,15 +161,25 @@ class Bus {
         newMessage.headers = message.headers;
         newMessage.properties = message.properties;
 
-        var key = Type.getClassName(Type.getClass(message.body)) + "_to_" + Type.getClassName(Type.getClass(newMessage.body));
-        if (bodyConverters.exists(key)) {
-            var fn = bodyConverters.get(key);
-            newMessage.body = fn(message.body);
-        } else {
-            newMessage.body.fromBytes(message.body.toBytes());
+        if (applyBody) {
+            var key = Type.getClassName(Type.getClass(message.body)) + "_to_" + Type.getClassName(Type.getClass(newMessage.body));
+            if (bodyConverters.exists(key)) {
+                var fn = bodyConverters.get(key);
+                newMessage.body = fn(message.body);
+            } else {
+                newMessage.body.fromBytes(message.body.toBytes());
+            }
         }
 
         return cast newMessage;
+    }
+
+    public static function canConvertMessage<T:RawBody>(message:Message<RawBody>, bodyType:Class<T>):Bool {
+        var className = Type.getClassName(bodyType);
+        if (messageTypes.exists(className)) {
+            return true;
+        }
+        return false;
     }
 
     public static function convertMessageUsingStringType<T:RawBody>(message:Message<RawBody>, bodyType:String):Message<T> {
@@ -181,7 +193,6 @@ class Bus {
     private static var bodyConverters:Map<String, RawBody->RawBody> = [];
     public static function registerBodyConverter<T1:RawBody, T2:RawBody>(from:Class<T1>, to:Class<T2>, fn:T1->T2) {
         var key = Type.getClassName(from) + "_to_" + Type.getClassName(to);
-        trace(key);
         bodyConverters.set(key, cast fn);
     }
 
@@ -208,6 +219,59 @@ class Bus {
             var m = new Message<StringBody>();
             m.body = new StringBody();
             return m;
+        });
+
+        registerMessageType(CsvBody, () -> {
+            var m = new Message<CsvBody>();
+            m.body = new CsvBody();
+            return m;
+        });
+
+        registerBodyConverter(CsvBody, JsonBody, (csv) -> {
+            var json = new JsonBody();
+            var array = [];
+            for (row in csv.data) {
+                var object = {};
+                for (n in 0...csv.columns.length) {
+                    var column = csv.columns[n];
+                    var value = row[n];
+                    if (value == null) {
+                        value = "";
+                    }
+                    Reflect.setField(object, column, value);
+                }
+                array.push(object);
+            }
+            json.data = array;
+            return json;
+        });
+
+        registerBodyConverter(JsonBody, CsvBody, (json) -> {
+            var csv = new CsvBody();
+            if (json.data is Array) {
+                var jsonArray:Array<Dynamic> = json.data;
+                var csvColumns:Array<String> = [];
+                for (jsonItem in jsonArray) {
+                    for (f in Reflect.fields(jsonItem)) {
+                        if (!csvColumns.contains(f)) {
+                            csvColumns.push(f);
+                        }
+                    }
+                }
+                csv.addColumns(csvColumns);
+                for (jsonItem in jsonArray) {
+                    var csvRow = [];
+                    for (field in csvColumns) {
+                        var value = Reflect.field(jsonItem, field);
+                        if (value == null) {
+                            value = "";
+                        }
+                        csvRow.push(value);
+                    }
+                    csv.addRow(csvRow);
+                }
+            }
+            return csv;
         });
     }    
 }
