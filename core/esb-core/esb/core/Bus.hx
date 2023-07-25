@@ -41,11 +41,7 @@ class Bus {
         if (bundlePrefixConfig != null && bundlePrefixConfig.uri != null) {
             effectiveUri = Uri.fromString(bundlePrefixConfig.uri);
             effectiveUri.params = uri.params;
-            // TODO: temp
-            if (effectiveUri.path.contains("{port}")) {
-                var port = uri.path.split(":").pop();
-                effectiveUri.path = effectiveUri.path.replace("{port}", port);
-            }
+            effectiveUri.replacePlaceholdersWith(uri);
         }
     
         BundleManager.startEndpoint(effectiveUri, true, uri).then(_ -> {

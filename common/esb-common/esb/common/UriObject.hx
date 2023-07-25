@@ -7,8 +7,12 @@ using StringTools;
 @:jsRequire("./esb-common.js", "esb.common.UriObject")
 extern class UriObject {
     public var prefix:String;
+    public var domain:String;
+    public var port(get, null):Null<Int>;
     public var path:String;
+    public var fullPath(get, null):String;
     public var params:Map<String, Any>;
+    public var fragment:String;
 
     public function new(uri:String = null);
     public function parse(uri:String):Void;
@@ -18,17 +22,29 @@ extern class UriObject {
     public function asEndpoint():String;
     public function toString():String;
     public function clone():Uri;
+    public function replacePlaceholdersWith(uri:Uri):Void;
     public static function fromString(uri:String):Uri;
 }
 
 #else
 
+/*
+
+    http://somewhere.there:999999/someplace_else?someparam1=value1&someparam2=value2#someotherinfo
+    | pre | domain        | port | path         | params                            | fragment   |
+*/
+
+
 @:expose
 @:native("esb.common.UriObject")
 class UriObject {
     public var prefix:String;
+    public var domain:String;
     public var path:String;
     public var params:Map<String, Any> = [];
+    public var fragment:String;
+
+    public var portString:String;
 
     public function new(uri:String = null) {
         if (uri != null) {
@@ -36,20 +52,43 @@ class UriObject {
         }
     }
 
+    public var port(get, null):Null<Int>;
+    private function get_port():Null<Int> {
+        if (portString == null) {
+            return null;
+        }
+        return Std.parseInt(portString);
+    }
+
+    public var fullPath(get, null):String;
+    private function get_fullPath():String {
+        var s = domain;
+        if (portString != null && portString.length == 0) {
+            s += ":";
+        }
+        if (path != null) {
+            s += "/" + path;
+        }
+        return s;
+    }
+
     public function parse(uri:String) {
-        var parts = uri.split(":");
-        prefix = parts.shift();
-        uri = parts.join(":");
+        var n = uri.indexOf(":");
+        prefix = uri.substring(0, n);
+        uri = uri.substring(n + 1);
         while (uri.startsWith("/")) {
             uri = uri.substr(1);
         }
 
+        var n = uri.indexOf("#");
+        if (n != -1) {
+            fragment = uri.substring(n + 1);
+            uri = uri.substring(0, n);
+        }
+
+        params = [];
         var n = uri.indexOf("?");
-        if (n == -1) {
-            path = uri;
-        } else {
-            params = [];
-            path = uri.substring(0, n);
+        if (n != -1) {
             var paramsString = uri.substring(n + 1);
             var paramParts = paramsString.split("&");
             for (p in paramParts) {
@@ -61,7 +100,23 @@ class UriObject {
                     params.set(pp[0], v);
                 }
             }
+            
+            uri = uri.substring(0, n);
         }
+
+        var n = uri.indexOf("/");
+        if (n != -1) {
+            path = uri.substring(n + 1);
+            uri = uri.substring(0, n);
+        }
+
+        var n = uri.indexOf(":");
+        if (n != -1) {
+            portString = uri.substring(n + 1);
+            uri = uri.substring(0, n);
+        }
+
+        domain = uri;
     }
 
     public function param(name:String, defaultValue:String = null):String {
@@ -87,19 +142,36 @@ class UriObject {
 
     public function asEndpoint():String {
         var s = prefix + "://";
-        s += path;
-        if (params != null) {
-            s += "";
+        if (domain != null) {
+            s += domain;
+        }
+        if (port != null) {
+            s += ":" + port;
+        }
+        if (path != null) {
+            s += "/" + path;
         }
         return s;
     }
 
     public function toString():String {
         var s = prefix;
-        if (!prefix.startsWith("{{") && !prefix.endsWith("}}")) {
+        if (s == null) {
+            s = "";
+        }
+        if (!domain.startsWith("{{") && !domain.endsWith("}}")) {
             s += "://";
         }
-        s += path;
+        if (domain != null) {
+            s += domain;
+        }
+        if (portString != null) {
+            s += ":" + portString;
+        }
+        if (path != null) {
+            s += "/" + path;
+        }
+
         if (params != null) {
             var paramArray = null;
             for (key in params.keys()) {
@@ -117,6 +189,25 @@ class UriObject {
             if (paramArray != null) {
                 s += paramArray.join("&");
             }
+        }
+
+        if (fragment != null) {
+            s += "#" + fragment;
+        }
+
+        return s;
+    }
+
+    public function replacePlaceholdersWith(uri:Uri) {
+        portString = replaceParts(portString, uri);
+    }
+
+    private function replaceParts(s:String, uri:Uri):String {
+        if (s == null) {
+            return null;
+        }
+        if (s.contains("{port}") && uri.portString != null) {
+            s = s.replace("{port}", uri.portString);
         }
         return s;
     }
