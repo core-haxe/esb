@@ -148,10 +148,93 @@ class Pm2BundleManager {
                 return;
             }
 
+            var maxInstances = prefixConfig.maxInstances;
+            if (maxInstances <= 0) {
+                maxInstances = 1;
+            }
+
             var bundleFile:String = bundleConfig.bundleFile;
             if (!bundleFile.endsWith(".js")) {
                 bundleFile += ".js";
             }
+
+            /*
+            Pm2.list((err, list) -> {
+                var itemName = uri.asEndpoint();
+                if (producer) {
+                    itemName = "[P] " + itemName;
+                } else {
+                    itemName = "[C] " + itemName;
+                }
+                var candidates:Array<Info> = [];
+                for (item in list) {
+                    if (Std.string(item.name).startsWith(itemName)) {
+                        candidates.push({
+                            name: item.name,
+                            running: item.pid != 0
+                        });
+                    }
+                }
+
+                trace("candidates: for", uri.toString(), candidates, maxInstances);
+
+                if (candidates.length == maxInstances) { // already enough, lets ensure running
+                    trace(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>> ALREADY ENOUGH LETS ENSURE RUNNING");
+                    var listToRestart = [];
+                    for (item in candidates) {
+                        if (!item.running) {
+                            listToRestart.push(item.name);
+                        }
+                    }
+                    restartList(listToRestart, () -> {
+                        resolve(true);
+                    });
+                } else if (candidates.length > maxInstances) { // too many lets remove some
+                    trace(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> TOO MANY!!!!", candidates.length, maxInstances, prefixConfig.maxInstances, prefixConfig.bundle.name);
+                    candidates.reverse();
+                    var listToDelete = [];
+                    while (candidates.length > maxInstances) {
+                        listToDelete.push(candidates.pop().name);
+                    }
+                    //deleteList(listToDelete, () -> {
+                    //    resolve(true);
+                    //});
+                    resolve(true);
+                } else { // need to add more
+                    trace("WE CAN ADD MORE!");
+                    var listToRestart = [];
+                    for (item in candidates) {
+                        if (!item.running) {
+                            listToRestart.push(item.name);
+                        }
+                    }
+
+                    var listToStart = [];
+                    for (i in 0...(maxInstances - candidates.length)) {
+                        var type:String = "consumer";
+                        if (producer) {
+                            type = "producer";
+                        }
+                        var details:Dynamic = {
+                            name: itemName + " [" + (candidates.length + i) + "]",
+                            script: bundleFile,
+                            args: [
+                                "--json-config",
+                                '{"type":"${type}","uri":"${uri.toString()}", "originalUri": "${originalUri.toString()}"}'
+                            ],
+                            watch: true
+                        }
+                        listToStart.push(details);
+                    }
+                    restartList(listToRestart, () -> {
+                        startList(listToStart, () -> {
+                            resolve(true);
+                        });
+                    });
+
+                }
+            });
+            */
 
             Pm2.list((err, list) -> {
                 var itemName = uri.asEndpoint();
@@ -180,8 +263,7 @@ class Pm2BundleManager {
                             "--json-config",
                             '{"type":"${type}","uri":"${uri.toString()}", "originalUri": "${originalUri.toString()}"}'
                         ],
-                        watch: true,
-                        //namespace: type
+                        watch: true
                     }
                     Pm2.start(details, (err, app) -> {
                         if (err != null) {
@@ -208,5 +290,62 @@ class Pm2BundleManager {
         });
     }
 
+    private static function startList(list:Array<Dynamic>, cb:Void->Void) {
+        if (list.length == 0) {
+            cb();
+            return;
+        }
 
+        var details = list.shift();
+        log.info('endpoint ${details.name} doesnt exist, starting');
+        Pm2.start(details, (err, app) -> {
+            if (err != null) {
+                trace(err);
+                startList(list, cb);
+            } else {
+                startList(list, cb);
+            }
+        });
+    }
+
+    private static function restartList(list:Array<String>, cb:Void->Void) {
+        if (list.length == 0) {
+            cb();
+            return;
+        }
+
+        var itemName = list.shift();
+        log.info('endpoint ${itemName} exists but isnt running, restarting');
+        Pm2.restart(itemName, (err, proc) -> {
+            if (err != null) {
+                trace(err);
+                restartList(list, cb);
+            } else {
+                restartList(list, cb);
+            }
+        });
+    }
+
+    private static function deleteList(list:Array<String>, cb:Void->Void) {
+        if (list.length == 0) {
+            cb();
+            return;
+        }
+
+        var itemName = list.shift();
+        log.info('endpoint ${itemName} exists but isnt allowed, deleting');
+        Pm2.delete(itemName, (err, proc) -> {
+            if (err != null) {
+                trace(err);
+                deleteList(list, cb);
+            } else {
+                deleteList(list, cb);
+            }
+        });
+    }
+}
+
+private typedef Info = {
+    public var name:String;
+    public var running:Bool;
 }

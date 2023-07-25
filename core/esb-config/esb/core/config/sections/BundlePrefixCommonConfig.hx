@@ -6,6 +6,7 @@ package esb.core.config.sections;
 extern class BundlePrefixCommonConfig {
     public function new();
     public var className:String;
+    public var maxInstances:Int;
     public var internal:Bool;
     public var uri:String;
     public var bundle(get, null):BundleConfig;
@@ -17,6 +18,7 @@ extern class BundlePrefixCommonConfig {
 @:native("esb.core.config.sections.BundlePrefixCommonConfig")
 class BundlePrefixCommonConfig {
     @:alias("class") public var className:String;
+    @:alias("max-instances") public var maxInstances:Int;
     public var internal:Bool;
     public var uri:String;
 

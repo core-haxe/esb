@@ -9,9 +9,11 @@ extern class BundleConfig {
     public var bundleFile:String;
     public var bundleEntryPoint:String;
     public var autoStart:Bool;
+    public var autoLoad:Bool;
     public var disabled:Bool;
     public var prefixes:Map<String, BundlePrefixConfig>;
     public var routes:Map<String, BundleRouteConfig>;
+    public var dependencies:Array<String>;
     public var properties:PropertiesConfig;
     
     public function hasPrefix(prefix:String, producer:Bool):Bool;
@@ -27,6 +29,7 @@ class BundleConfig {
     @:alias("bundle-file") public var bundleFile:String;
     @:alias("bundle-entry-point") public var bundleEntryPoint:String;
     @:alias("auto-start") public var autoStart:Bool;
+    @:alias("auto-load") public var autoLoad:Bool;
     public var disabled:Bool;
 
     @:default(new Map<String, esb.core.config.sections.BundlePrefixConfig>())
@@ -34,6 +37,9 @@ class BundleConfig {
 
     @:default(new Map<String, esb.core.config.sections.BundleRouteConfig>())
     @:optional public var routes:Map<String, BundleRouteConfig>;
+
+    @:default(new Array<String>())
+    @:optional public var dependencies:Array<String>;
     
     @:alias("properties") private var _properties:Map<String, String> = [];
     @:jignored public var properties:PropertiesConfig;

@@ -4,6 +4,8 @@ import haxe.io.Encoding;
 import haxe.io.Bytes;
 
 @:keep
+@:keepInit
+@:keepSub
 @:expose
 @:native("esb.core.RawBody")
 class RawBody {

@@ -8,6 +8,7 @@
 --class-path ../esb-core
 --class-path ../esb-queues
 --class-path ../esb-logging
+--class-path ../esb-config
 --class-path ../../common/esb-common
 
 -D no-deprecation-warnings

@@ -13,14 +13,15 @@ using StringTools;
 
 @:jsRequire("./esb-core.js", "esb.core.Bus")
 extern class Bus {
-    public static function from(uri:Uri, callback:Message<RawBody>->Promise<Message<RawBody>>):Void;
+    public static function from(uri:Uri, callback:Uri->Message<RawBody>->Promise<Message<RawBody>>):Void;
     public static function to(uri:Uri, message:Message<RawBody>):Promise<Message<RawBody>>;
 
     public static function registerMessageType<T:RawBody>(bodyType:Class<T>, ctor:Void->Message<T>):Void;
     public static function createMessage<T:RawBody>(bodyType:Class<T>):Message<T>;
+    public static function copyMessage<T:RawBody>(message:Message<RawBody>, bodyType:Class<T>):Message<T>;
     public static function convertMessage<T:RawBody>(message:Message<RawBody>, bodyType:Class<T>, applyBody:Bool = true):Message<T>;
     public static function canConvertMessage<T:RawBody>(message:Message<RawBody>, bodyType:Class<T>):Bool;
-    public static function convertMessageUsingStringType<T:RawBody>(message:Message<RawBody>, bodyType:String):Message<T>;
+    public static function convertMessageUsingStringType<T:RawBody>(message:Message<RawBody>, bodyType:String, applyBody:Bool = true):Message<T>;
     public static function registerBodyConverter<T1:RawBody, T2:RawBody>(from:Class<T1>, to:Class<T2>, fn:T1->T2):Void;
 }
 
@@ -32,7 +33,9 @@ extern class Bus {
 class Bus {
     private static var log:esb.logging.Logger = new esb.logging.Logger("esb.core.Bus");
 
-    public static function from(uri:Uri, callback:Message<RawBody>->Promise<Message<RawBody>>) {
+    public static function from(uri:Uri, callback:Uri->Message<RawBody>->Promise<Message<RawBody>>) {
+        BundleLoader.autoLoadBundles();
+
         var effectiveUri = uri.clone();
         var bundlePrefixConfig = esb.core.config.sections.EsbConfig.get().findPrefix(uri.prefix, true);
         if (bundlePrefixConfig != null && bundlePrefixConfig.uri != null) {
@@ -60,9 +63,17 @@ class Bus {
                     return new Promise((resolve, reject) -> {
                         try {
                             var message = createMessage(RawBody);
-                            message.properties.set(BusProperties.SourceUri, uri.toString());
                             message.unserialize(data);
-                            callback(message).then(result -> {
+                            message.properties.set(BusProperties.SourceUri, uri.toString());
+                            var finalMessage = message;
+                            if (message.bodyType != Type.getClassName(Type.getClass(message.body))) {
+                                finalMessage = convertMessageUsingStringType(message, message.bodyType);
+                            }
+                            var destUri = uri;
+                            if (message.properties.exists(BusProperties.DestinationUri)) {
+                                destUri = Uri.fromString(message.properties.get(BusProperties.DestinationUri));
+                            }
+                            callback(destUri, finalMessage).then(result -> {
                                 esb.core.exchange.ExchangePatternFactory.create(endpoint, false).then(exchangePattern -> {
                                     exchangePattern.sendMessage(result).then(_ -> {
                                         resolve(true);
@@ -93,6 +104,8 @@ class Bus {
     }
 
     public static function to(uri:Uri, message:Message<RawBody>):Promise<Message<RawBody>> {
+        BundleLoader.autoLoadBundles();
+
         return new Promise((resolve, reject) -> {
             var effectiveUri = uri.clone();
             message.properties.set(BusProperties.DestinationUri, uri.toString());
@@ -102,6 +115,7 @@ class Bus {
                 effectiveUri.params = uri.params;
             }
 
+            message = copyMessage(message, Type.getClass(message.body));
             BundleManager.startEndpoint(effectiveUri, false, uri).then(_ -> {
                 var endpoint = effectiveUri.asEndpoint();
                 esb.core.exchange.ExchangePatternFactory.create(endpoint, true).then(exchangePattern -> {
@@ -145,24 +159,49 @@ class Bus {
         return cast m;
     }
 
+    public static function copyMessage<T:RawBody>(message:Message<RawBody>, bodyType:Class<T>):Message<T> {
+        var newMessage = new Message<RawBody>();
+        newMessage.body = new RawBody();
+        var toType = Type.getClassName(bodyType);
+        if (messageTypes.exists(toType)) {
+            var fn = messageTypes.get(toType);
+            newMessage = fn();
+            newMessage.bodyType = toType;
+        } else {
+            log.warn('could not create message of type "${toType}", no type registered, using raw');
+        }
+
+        newMessage.correlationId = message.correlationId;
+        newMessage.headers = message.headers.copy();
+        newMessage.properties = message.properties.copy();
+        newMessage.body.fromBytes(message.body.toBytes());
+
+        return cast newMessage;
+    }
+
     public static function convertMessage<T:RawBody>(message:Message<RawBody>, bodyType:Class<T>, applyBody:Bool = true):Message<T> {
         var newMessage = new Message<RawBody>();
         newMessage.body = new RawBody();
-        var className = Type.getClassName(bodyType);
-        if (messageTypes.exists(className)) {
-            var fn = messageTypes.get(className);
+        var fromType = Type.getClassName(Type.getClass(message.body));
+        var toType = Type.getClassName(bodyType);
+        if (fromType == toType) {
+            return cast message;
+        }
+
+        if (messageTypes.exists(toType)) {
+            var fn = messageTypes.get(toType);
             newMessage = fn();
-            newMessage.bodyType = className;
+            newMessage.bodyType = toType;
         } else {
-            log.warn('could not convert message of type "${className}", no type registered, using raw');
+            log.warn('could not convert message of type "${toType}", no type registered, using raw');
         }
     
         newMessage.correlationId = message.correlationId;
-        newMessage.headers = message.headers;
-        newMessage.properties = message.properties;
+        newMessage.headers = message.headers.copy();
+        newMessage.properties = message.properties.copy();
 
         if (applyBody) {
-            var key = Type.getClassName(Type.getClass(message.body)) + "_to_" + Type.getClassName(Type.getClass(newMessage.body));
+            var key = fromType + "_to_" + toType;
             if (bodyConverters.exists(key)) {
                 var fn = bodyConverters.get(key);
                 newMessage.body = fn(message.body);
@@ -171,23 +210,62 @@ class Bus {
             }
         }
 
+        if (esb.core.config.sections.EsbConfig.get().logging.verbose) {
+            log.info('converted message type from "${fromType}" to "${toType}"');
+        }
         return cast newMessage;
     }
 
     public static function canConvertMessage<T:RawBody>(message:Message<RawBody>, bodyType:Class<T>):Bool {
         var className = Type.getClassName(bodyType);
         if (messageTypes.exists(className)) {
+            if (esb.core.config.sections.EsbConfig.get().logging.verbose) {
+                log.info('conversion to "${className}" is possibe');
+            }
             return true;
+        }
+        if (esb.core.config.sections.EsbConfig.get().logging.verbose) {
+            log.info('conversion to "${className}" is NOT possibe');
         }
         return false;
     }
 
-    public static function convertMessageUsingStringType<T:RawBody>(message:Message<RawBody>, bodyType:String):Message<T> {
-        var bodyTypeClass = Type.resolveClass(message.bodyType);
-        if (bodyTypeClass == null) {
+    public static function convertMessageUsingStringType<T:RawBody>(message:Message<RawBody>, bodyType:String, applyBody:Bool = true):Message<T> {
+        var fromType = Type.getClassName(Type.getClass(message.body));
+        var toType = bodyType;
+        if (fromType == toType) {
             return cast message;
         }
-        return convertMessage(message, bodyTypeClass);
+
+        var newMessage = new Message<RawBody>();
+        newMessage.body = new RawBody();
+        if (messageTypes.exists(toType)) {
+            var fn = messageTypes.get(toType);
+            newMessage = fn();
+            newMessage.bodyType = toType;
+        } else {
+            log.warn('could not convert message of type "${toType}", no type registered, using raw');
+        }
+    
+        newMessage.correlationId = message.correlationId;
+        newMessage.headers = message.headers.copy();
+        newMessage.properties = message.properties.copy();
+
+        if (applyBody) {
+            var key = fromType + "_to_" + toType;
+            if (bodyConverters.exists(key)) {
+                var fn = bodyConverters.get(key);
+                newMessage.body = fn(message.body);
+            } else {
+                newMessage.body.fromBytes(message.body.toBytes());
+            }
+        }
+
+        if (esb.core.config.sections.EsbConfig.get().logging.verbose) {
+            log.info('converted message type from "${fromType}" to "${toType}"');
+        }
+        return cast newMessage;
+
     }
 
     private static var bodyConverters:Map<String, RawBody->RawBody> = [];

@@ -15,7 +15,7 @@ class InOut implements IExchangePattern {
     private var outputQ:IQueue<String> = null;
     private var responseQ:IQueue<String> = null;
 
-    private var _correlationMap:Map<String, {resolve:Message<RawBody>->Void, reject:Any->Void}> = [];
+    private static var _correlationMap:Map<String, {resolve:Message<RawBody>->Void, reject:Any->Void}> = [];
 
     private var endpoint:String;
     private var producer:Bool = false;
@@ -50,10 +50,14 @@ class InOut implements IExchangePattern {
             initQueues().then(success -> {
                 var s = message.serialize();
                 if (producer) {
-                    log.info('sending message to output endpoint ${this.endpoint} (correlationId: ${message.correlationId})');
+                    if (esb.core.config.sections.EsbConfig.get().logging.verbose) {
+                        log.info('sending message to output endpoint ${this.endpoint} (correlationId: ${message.correlationId})');
+                    }
                     outputQ.enqueue(s);
                 } else {
-                    log.info('sending message to response endpoint ${this.endpoint} (correlationId: ${message.correlationId})');
+                    if (esb.core.config.sections.EsbConfig.get().logging.verbose) {
+                        log.info('sending message to response endpoint ${this.endpoint} (correlationId: ${message.correlationId})');
+                    }
                     responseQ.enqueue(s);
                     resolve(message);
                 }
@@ -106,17 +110,21 @@ class InOut implements IExchangePattern {
         return new Promise((resolve, reject) -> {
             var message = Bus.createMessage(RawBody);
             message.unserialize(data);
-            var finalMessage = message;
-            if (message.bodyType != Type.getClassName(Type.getClass(message.body))) {
-                finalMessage = Bus.convertMessageUsingStringType(message, message.bodyType);
+            if (esb.core.config.sections.EsbConfig.get().logging.verbose) {
+                log.info('message received on response queue for ${this.endpoint} (correlationId: ${message.correlationId})');
             }
-            log.info('message received on response queue for ${this.endpoint} (correlationId: ${finalMessage.correlationId})');
-            var info = _correlationMap.get(finalMessage.correlationId);
+            var info = _correlationMap.get(message.correlationId);
             if (info == null) {
-                log.info("no correlation info");
+                if (esb.core.config.sections.EsbConfig.get().logging.verbose) {
+                    log.info("no correlation info");
+                }
                 responseQ.requeue(data);
                 resolve(true);
             } else {
+                var finalMessage = message;
+                if (message.bodyType != Type.getClassName(Type.getClass(message.body))) {
+                    finalMessage = Bus.convertMessageUsingStringType(message, message.bodyType);
+                }
                 _correlationMap.remove(finalMessage.correlationId);
                 info.resolve(finalMessage);
                 resolve(true);

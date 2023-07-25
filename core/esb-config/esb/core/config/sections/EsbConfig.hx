@@ -10,6 +10,7 @@ extern class EsbConfig {
     public var bundles:Map<String, BundleConfig>;
     public var queues:Map<String, QueueConfig>;
     public var properties:PropertiesConfig;
+    public var logging:LoggingConfig;
     public function findBundleFromPrefix(prefix:String, producer:Bool):BundleConfig;
     public function findBundleFromName(name:String):BundleConfig;
     public function findBundleFromBundleFile(bundleFile:String):BundleConfig;
@@ -30,6 +31,8 @@ class EsbConfig {
 
     @:alias("properties") private var _properties:Map<String, String> = [];
     @:jignored public var properties:PropertiesConfig;
+
+    public var logging:LoggingConfig;
 
     public function new() {
     }

@@ -11,16 +11,6 @@
                         "internal": true
                     }
                 }
-            },
-            "types": {
-                "bodies": {
-                    "raw": {
-                        "class": "esb.core.bodies.RawBody"
-                    },
-                    "json": {
-                        "class": "esb.core.bodies.JsonBody"
-                    }
-                }
             }
         }
     },
@@ -47,6 +37,9 @@
                 "brokerUrl": "amqp://localhost_1"
             }
         }
+    },
+    "logging": {
+        "verbose": true
     },
     "properties": {
         "import": [".*properties.*\\.json"],
