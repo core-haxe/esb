@@ -199,7 +199,9 @@ class UriObject {
     }
 
     public function replacePlaceholdersWith(uri:Uri) {
+        domain = replaceParts(domain, uri);
         portString = replaceParts(portString, uri);
+        path = replaceParts(path, uri);
     }
 
     private function replaceParts(s:String, uri:Uri):String {
@@ -208,6 +210,12 @@ class UriObject {
         }
         if (s.contains("{port}") && uri.portString != null) {
             s = s.replace("{port}", uri.portString);
+        }
+        if (s.contains("{domain}") && uri.domain != null) {
+            s = s.replace("{domain}", uri.domain);
+        }
+        if (s.contains("{path}") && uri.path != null) {
+            s = s.replace("{path}", uri.path);
         }
         return s;
     }
