@@ -10,6 +10,7 @@ using StringTools;
 extern class CsvBody extends RawBody {
     public var columns:Array<String>;
     public var data:Array<Array<Any>>;
+    public function value(columnName:String, defaultValue:Any = null):Any;
     public function addColumn(name:String):Void;
     public function addColumns(names:Array<Any>):Void;
     public function addRow(data:Array<Any>):Void;
@@ -26,6 +27,23 @@ extern class CsvBody extends RawBody {
 class CsvBody extends RawBody {
     public var columns:Array<String> = [];
     public var data:Array<Array<Any>> = [];
+
+    public function value(columnName:String, defaultValue:Any = null):Any {
+        if (data.length == 0) {
+            return defaultValue;
+        }
+
+        var columnIndex = columns.indexOf(columnName);
+        if (columnIndex == -1) {
+            return defaultValue;
+        }
+
+        var r = data[0][columnIndex];
+        if (r == null) {
+            return defaultValue;
+        }
+        return r;
+    }
 
     public function addColumns(names:Array<Any>) {
         columns = [];
@@ -85,6 +103,55 @@ class CsvBody extends RawBody {
             sb.add("\n");
         }
         return Bytes.ofString(sb.toString());
+    }
+
+    public static function toJson(csv:CsvBody):JsonBody {
+        var json = new JsonBody();
+        var array = [];
+        for (row in csv.data) {
+            var object = {};
+            for (n in 0...csv.columns.length) {
+                var column = csv.columns[n];
+                var value = row[n];
+                if (value == null) {
+                    value = "";
+                }
+                Reflect.setField(object, column, value);
+            }
+            array.push(object);
+        }
+        json.data = array;
+        return json;
+    }
+
+    public static function toXml(csv:CsvBody):XmlBody {
+        var xml = new XmlBody();
+        var sb = new StringBuf();
+        sb.add("<root>");
+        for (row in csv.data) {
+            sb.add("<item>");
+            for (n in 0...csv.columns.length) {
+                var column = csv.columns[n];
+                var value = row[n];
+                if (value == null) {
+                    value = "";
+                }
+
+                sb.add("<");
+                sb.add(column);
+                sb.add(">");
+
+                sb.add(value);
+
+                sb.add("</");
+                sb.add(column);
+                sb.add(">");
+            }
+            sb.add("</item>");
+        }
+        sb.add("</root>");
+        xml.root = Xml.parse(sb.toString());
+        return xml;
     }
 }
 

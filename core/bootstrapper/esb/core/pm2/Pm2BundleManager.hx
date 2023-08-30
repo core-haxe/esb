@@ -238,6 +238,13 @@ class Pm2BundleManager {
 
             Pm2.list((err, list) -> {
                 var itemName = uri.asEndpoint();
+                /*
+                if (producer) {
+                    itemName = "[P] " + itemName;
+                } else {
+                    itemName = "[C] " + itemName;
+                }
+                */
                 var alreadyExists = false;
                 var alreadyRunning = false;
                 for (item in list) {

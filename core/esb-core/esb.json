@@ -10,6 +10,22 @@
                     "producer": {
                         "internal": true
                     }
+                },
+                "consumer": {
+                    "consumer": {
+                        "internal": true
+                    },
+                    "producer": {
+                        "internal": true
+                    }
+                },
+                "producer": {
+                    "consumer": {
+                        "internal": true
+                    },
+                    "producer": {
+                        "internal": true
+                    }
                 }
             }
         }

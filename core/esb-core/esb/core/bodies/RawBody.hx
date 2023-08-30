@@ -21,6 +21,17 @@ class RawBody {
         return bytes.toString();
     }
 
+    public function append(data:Any) {
+        if ((data is String)) {
+            var s:String = cast data;
+            if (_bytes == null) {
+                _bytes = Bytes.ofString(s);
+            } else {
+                _bytes = Bytes.ofString(_bytes.toString() + s);
+            }
+        }
+    }
+
     private var _bytes:Bytes = null;
 
     public function fromBytes(bytes:Bytes) {

@@ -1,8 +1,10 @@
 package esb.core;
 
+import esb.core.bodies.XmlBody;
 import esb.core.bodies.CsvBody;
 import esb.core.bodies.StringBody;
 import esb.core.bodies.JsonBody;
+import esb.core.bodies.MultiBody;
 import esb.common.Uri;
 import promises.Promise;
 import esb.core.bodies.RawBody;
@@ -22,7 +24,9 @@ extern class Bus {
     public static function convertMessage<T:RawBody>(message:Message<RawBody>, bodyType:Class<T>, applyBody:Bool = true):Message<T>;
     public static function canConvertMessage<T:RawBody>(message:Message<RawBody>, bodyType:Class<T>):Bool;
     public static function convertMessageUsingStringType<T:RawBody>(message:Message<RawBody>, bodyType:String, applyBody:Bool = true):Message<T>;
+    public static function convertBody<T:RawBody>(body:RawBody, bodyType:Class<T>, applyBody:Bool = true):T;
     public static function registerBodyConverter<T1:RawBody, T2:RawBody>(from:Class<T1>, to:Class<T2>, fn:T1->T2):Void;
+    public static function isMessageBody(object:Dynamic):Bool;
 }
 
 #else
@@ -42,6 +46,9 @@ class Bus {
             effectiveUri = Uri.fromString(bundlePrefixConfig.uri);
             effectiveUri.params = uri.params;
             effectiveUri.replacePlaceholdersWith(uri);
+        }
+        if (effectiveUri.prefix != "consumer" && effectiveUri.prefix != "producer") {
+            effectiveUri.prefix = "producer";
         }
     
         BundleManager.startEndpoint(effectiveUri, true, uri).then(_ -> {
@@ -109,6 +116,10 @@ class Bus {
             if (bundlePrefixConfig != null && bundlePrefixConfig.uri != null) {
                 effectiveUri = Uri.fromString(bundlePrefixConfig.uri);
                 effectiveUri.params = uri.params;
+                effectiveUri.replacePlaceholdersWith(uri);
+            }
+            if (effectiveUri.prefix != "consumer" && effectiveUri.prefix != "producer") {
+                effectiveUri.prefix = "consumer";
             }
 
             message = copyMessage(message, Type.getClass(message.body));
@@ -156,6 +167,7 @@ class Bus {
     }
 
     public static function copyMessage<T:RawBody>(message:Message<RawBody>, bodyType:Class<T>):Message<T> {
+        registerInternalMessageTypes();
         var newMessage = new Message<RawBody>();
         newMessage.body = new RawBody();
         var toType = Type.getClassName(bodyType);
@@ -176,6 +188,7 @@ class Bus {
     }
 
     public static function convertMessage<T:RawBody>(message:Message<RawBody>, bodyType:Class<T>, applyBody:Bool = true):Message<T> {
+        registerInternalMessageTypes();
         var newMessage = new Message<RawBody>();
         newMessage.body = new RawBody();
         var fromType = Type.getClassName(Type.getClass(message.body));
@@ -213,6 +226,7 @@ class Bus {
     }
 
     public static function canConvertMessage<T:RawBody>(message:Message<RawBody>, bodyType:Class<T>):Bool {
+        registerInternalMessageTypes();
         var className = Type.getClassName(bodyType);
         if (messageTypes.exists(className)) {
             if (esb.core.config.sections.EsbConfig.get().logging.verbose) {
@@ -227,6 +241,7 @@ class Bus {
     }
 
     public static function convertMessageUsingStringType<T:RawBody>(message:Message<RawBody>, bodyType:String, applyBody:Bool = true):Message<T> {
+        registerInternalMessageTypes();
         var fromType = Type.getClassName(Type.getClass(message.body));
         var toType = bodyType;
         if (fromType == toType) {
@@ -262,6 +277,43 @@ class Bus {
         }
         return cast newMessage;
 
+    }
+
+    public static function convertBody<T:RawBody>(body:RawBody, bodyType:Class<T>, applyBody:Bool = true):T {
+        registerInternalMessageTypes();
+        var fromType = Type.getClassName(Type.getClass(body));
+        var toType = Type.getClassName(bodyType);
+        if (fromType == toType) {
+            return cast body;
+        }
+
+        var newMessage = new Message<RawBody>();
+        newMessage.body = new RawBody();
+        if (messageTypes.exists(toType)) {
+            var fn = messageTypes.get(toType);
+            newMessage = fn();
+            newMessage.bodyType = toType;
+        } else {
+            log.warn('could not convert message of type "${toType}", no type registered, using raw');
+        }
+
+        var newBody:T = cast newMessage.body;
+        if (applyBody) {
+            var key = fromType + "_to_" + toType;
+            if (bodyConverters.exists(key)) {
+                var fn = bodyConverters.get(key);
+                newBody = cast fn(body);
+            } else {
+                newBody.fromBytes(body.toBytes());
+            }
+        }
+
+        return newBody;
+    }
+
+    public static function isMessageBody(object:Any):Bool {
+        var className = Type.getClassName(Type.getClass(object));
+        return messageTypes.exists(className);
     }
 
     private static var bodyConverters:Map<String, RawBody->RawBody> = [];
@@ -301,52 +353,25 @@ class Bus {
             return m;
         });
 
-        registerBodyConverter(CsvBody, JsonBody, (csv) -> {
-            var json = new JsonBody();
-            var array = [];
-            for (row in csv.data) {
-                var object = {};
-                for (n in 0...csv.columns.length) {
-                    var column = csv.columns[n];
-                    var value = row[n];
-                    if (value == null) {
-                        value = "";
-                    }
-                    Reflect.setField(object, column, value);
-                }
-                array.push(object);
-            }
-            json.data = array;
-            return json;
+        registerMessageType(XmlBody, () -> {
+            var m = new Message<XmlBody>();
+            m.body = new XmlBody();
+            return m;
         });
 
-        registerBodyConverter(JsonBody, CsvBody, (json) -> {
-            var csv = new CsvBody();
-            if (json.data is Array) {
-                var jsonArray:Array<Dynamic> = json.data;
-                var csvColumns:Array<String> = [];
-                for (jsonItem in jsonArray) {
-                    for (f in Reflect.fields(jsonItem)) {
-                        if (!csvColumns.contains(f)) {
-                            csvColumns.push(f);
-                        }
-                    }
-                }
-                csv.addColumns(csvColumns);
-                for (jsonItem in jsonArray) {
-                    var csvRow = [];
-                    for (field in csvColumns) {
-                        var value = Reflect.field(jsonItem, field);
-                        if (value == null) {
-                            value = "";
-                        }
-                        csvRow.push(value);
-                    }
-                    csv.addRow(csvRow);
-                }
-            }
-            return csv;
+        registerMessageType(MultiBody, () -> {
+            var m = new Message<MultiBody>();
+            m.body = new MultiBody();
+            return m;
         });
+
+        registerBodyConverter(CsvBody, JsonBody, CsvBody.toJson);
+        registerBodyConverter(CsvBody, XmlBody, CsvBody.toXml);
+
+        registerBodyConverter(JsonBody, CsvBody, JsonBody.toCsv);
+        registerBodyConverter(JsonBody, XmlBody, JsonBody.toXml);
+
+        registerBodyConverter(MultiBody, XmlBody, MultiBody.toXml);
     }    
 }
 
