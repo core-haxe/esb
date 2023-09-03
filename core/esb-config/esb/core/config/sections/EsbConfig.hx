@@ -7,6 +7,7 @@ using StringTools;
 @:jsRequire("./esb-config.js", "esb.core.config.sections.EsbConfig")
 extern class EsbConfig {
     public function new();
+    public var baseDir(get, null):String;
     public var bundles:Map<String, BundleConfig>;
     public var queues:Map<String, QueueConfig>;
     public var properties:PropertiesConfig;
@@ -17,6 +18,7 @@ extern class EsbConfig {
     public function findPrefix(prefix:String, producer:Bool):BundlePrefixCommonConfig;
     public function getAutoStartBundles():Array<BundleConfig>;
     public function getDisabledBundles():Array<BundleConfig>;
+    public function path(name:String, create:Bool = true):String;
 
     public static function get(filename:String = "config/esb.json", cache:Bool = true):EsbConfig;
 }
@@ -31,6 +33,23 @@ class EsbConfig {
 
     @:alias("properties") private var _properties:Map<String, String> = [];
     @:jignored public var properties:PropertiesConfig;
+
+    public var baseDir(get, null):String;
+    private function get_baseDir():String {
+        var path = properties.get("baseDir");
+        if (path == null) {
+            path = Sys.getCwd();
+        }
+        return haxe.io.Path.normalize(path);
+    }
+
+    public function path(name:String, create:Bool = true):String {
+        var p = haxe.io.Path.normalize(baseDir + "/" + name);
+        if (create && !sys.FileSystem.exists(p)) {
+            sys.FileSystem.createDirectory(p);
+        }
+        return p;
+    }
 
     public var logging:LoggingConfig;
 

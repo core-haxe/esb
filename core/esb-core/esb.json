@@ -59,6 +59,7 @@
     },
     "properties": {
         "import": [".*properties.*\\.json"],
-        "brokerUrl": "amqp://localhost_2"
+        "brokerUrl": "amqp://localhost_2",
+        "baseDir": "C:\\Temp\\esb-data\\"
     }
 }
