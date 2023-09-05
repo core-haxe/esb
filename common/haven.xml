@@ -1,0 +1,9 @@
+<project>
+    <group>esb::core::common</group>
+    <name>main</name>
+    <version>0.0.0</version>
+
+    <modules>
+        <module>esb-common</module>
+    </modules>
+</project>

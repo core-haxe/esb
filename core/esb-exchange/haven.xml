@@ -1,0 +1,34 @@
+<project>
+    <group>esb::core</group>
+    <name>esb-exchange</name>
+    <version>0.0.0</version>
+
+    <commands>
+        <build>
+            <haxe target="js" output="${buildDir}/esb-exchange.js" cleanUp="false" outputFilename="nodejs.hxml">
+                <dependencies>
+                    <dependency>hxnodejs</dependency>
+                    <dependency>promises</dependency>
+                    <dependency>queues-core</dependency>
+                </dependencies>
+                <class-paths>
+                    <class-path>.</class-path>
+                    <class-path>../esb-core</class-path>
+                    <class-path>../esb-queues</class-path>
+                    <class-path>../esb-logging</class-path>
+                    <class-path>../esb-config</class-path>
+                    <class-path>../../common/esb-common</class-path>
+                </class-paths>
+                <compiler-args>
+                    <compiler-arg>--macro include('esb.core.exchange')</compiler-arg>
+                    <compiler-arg>--macro include('esb.core.exchange.eip')</compiler-arg>
+                </compiler-args>
+                <compiler-defines>
+                    <compiler-define>no-deprecation-warnings</compiler-define>
+                    <compiler-define>esb-exchange-impl</compiler-define>
+                    <compiler-define>shallow-expose</compiler-define>
+                </compiler-defines>
+            </haxe>
+        </build>
+    </commands>
+</project>

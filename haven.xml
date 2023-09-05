@@ -1,0 +1,10 @@
+<project>
+    <group>esb</group>
+    <name>main</name>
+    <version>0.0.0</version>
+
+    <modules>
+        <module>common</module>
+        <module>core</module>
+    </modules>
+</project>

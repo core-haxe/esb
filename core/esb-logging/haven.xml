@@ -1,0 +1,28 @@
+<project>
+    <group>esb::core</group>
+    <name>esb-logging</name>
+    <version>0.0.0</version>
+
+    <commands>
+        <build>
+            <haxe target="js" output="${buildDir}/esb-logging.js" cleanUp="false" outputFilename="nodejs.hxml">
+                <dependencies>
+                    <dependency>hxnodejs</dependency>
+                    <dependency>logging</dependency>
+                </dependencies>
+                <class-paths>
+                    <class-path>.</class-path>
+                </class-paths>
+                <compiler-args>
+                    <compiler-arg>--macro include('esb.logging')</compiler-arg>
+                    <compiler-arg>--dce full</compiler-arg>
+                </compiler-args>
+                <compiler-defines>
+                    <compiler-define>no-deprecation-warnings</compiler-define>
+                    <compiler-define>esb-logging-impl</compiler-define>
+                    <compiler-define>shallow-expose</compiler-define>
+                </compiler-defines>
+            </haxe>
+        </build>
+    </commands>
+</project>

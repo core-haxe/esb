@@ -1,0 +1,32 @@
+<project>
+    <group>esb::core</group>
+    <name>boostrapper</name>
+    <version>0.0.0</version>
+
+    <commands>
+        <build>
+            <haxe target="js" output="${buildDir}/bootstrapper.js" main="Bootstrap" cleanUp="false" outputFilename="nodejs.hxml">
+                <dependencies>
+                    <dependency>hxnodejs</dependency>
+                    <dependency>promises</dependency>
+                </dependencies>
+                <class-paths>
+                    <class-path>.</class-path>
+                    <class-path>../esb-logging</class-path>
+                    <class-path>../esb-ipc</class-path>
+                    <class-path>../esb-config</class-path>
+                    <class-path>../../common/esb-common</class-path>
+                </class-paths>
+                <compiler-args>
+                    <compiler-arg>--macro include('esb.core')</compiler-arg>
+                    <compiler-arg>--dce full</compiler-arg>
+                </compiler-args>
+                <compiler-defines>
+                    <compiler-define>no-deprecation-warnings</compiler-define>
+                    <compiler-define>esb-bundle-manager-impl</compiler-define>
+                    <compiler-define>shallow-expose</compiler-define>
+                </compiler-defines>
+            </haxe>
+        </build>
+    </commands>
+</project>

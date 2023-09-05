@@ -1,0 +1,15 @@
+<project>
+    <group>esb::core</group>
+    <name>main</name>
+    <version>0.0.0</version>
+
+    <modules>
+        <module>bootstrapper</module>
+        <module>esb-config</module>
+        <module>esb-core</module>
+        <module>esb-exchange</module>
+        <module>esb-ipc</module>
+        <module>esb-logging</module>
+        <module>esb-queues</module>
+    </modules>
+</project>

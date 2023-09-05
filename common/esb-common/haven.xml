@@ -1,0 +1,27 @@
+<project>
+    <group>esb::core::common</group>
+    <name>esb-common</name>
+    <version>0.0.0</version>
+
+    <commands>
+        <build>
+            <haxe target="js" output="${buildDir}/esb-common.js" cleanUp="false" outputFilename="nodejs.hxml">
+                <dependencies>
+                    <dependency>uuid</dependency>
+                </dependencies>
+                <class-paths>
+                    <class-path>.</class-path>
+                </class-paths>
+                <compiler-args>
+                    <compiler-arg>--macro include('esb.common')</compiler-arg>
+                    <compiler-arg>--dce full</compiler-arg>
+                </compiler-args>
+                <compiler-defines>
+                    <compiler-define>no-deprecation-warnings</compiler-define>
+                    <compiler-define>esb-common-impl</compiler-define>
+                    <compiler-define>shallow-expose</compiler-define>
+                </compiler-defines>
+            </haxe>
+        </build>
+    </commands>
+</project>
