@@ -48,9 +48,6 @@
                     "queueName": "{endpoint}",
                     "producerOnly": "true"
                 }
-            },
-            "properties": {
-                "brokerUrl": "amqp://localhost_1"
             }
         }
     },
@@ -58,8 +55,6 @@
         "verbose": true
     },
     "properties": {
-        "import": [".*properties.*\\.json"],
-        "brokerUrl": "amqp://localhost_2",
-        "baseDir": "C:\\Temp\\esb-data\\"
+        "import": [".*properties.*\\.json"]
     }
 }
