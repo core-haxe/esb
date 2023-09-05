@@ -87,9 +87,13 @@ private class ConfigPreProcessor {
         }
 
 
-        var json = haxe.Json.parse(jsonString);
-        processImportNodes(json);
-        var result = processNodes(json);
+        try {
+            var json = haxe.Json.parse(jsonString);
+            processImportNodes(json);
+            result = processNodes(json);
+        } catch (e:Dynamic) {
+            trace("ERROR: problem parsing json config: ", e);
+        }
 
         return result;
     }
