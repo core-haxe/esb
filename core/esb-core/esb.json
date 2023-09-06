@@ -34,15 +34,15 @@
         "rabbitmq": {
             "default": true,
             "consumer": {
-                "class": "rabbitmq_c",
+                "class": "rabbitmq",
                 "properties": {
-                    "brokerUrl": "amqp://localhost",
+                    "brokerUrl": "{{brokerUrl}}",
                     "queueName": "{endpoint}",
                     "producerOnly": "false"
                 }
             },
             "producer": {
-                "class": "rabbitmq_p",
+                "class": "rabbitmq",
                 "properties": {
                     "brokerUrl": "{{brokerUrl}}",
                     "queueName": "{endpoint}",
@@ -55,6 +55,7 @@
         "verbose": true
     },
     "properties": {
-        "import": [".*properties.*\\.json"]
+        "import": [".*properties.*\\.json"],
+        "brokerUrl": "amqp://localhost"
     }
 }
