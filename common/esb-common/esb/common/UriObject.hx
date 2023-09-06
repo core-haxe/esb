@@ -159,9 +159,11 @@ class UriObject {
         if (s == null) {
             s = "";
         }
+        s += "://";
+        /*
         if (!domain.startsWith("{{") && !domain.endsWith("}}")) {
-            s += "://";
         }
+        */
         if (domain != null) {
             s += domain;
         }
