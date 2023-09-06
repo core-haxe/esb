@@ -169,7 +169,7 @@ private class ConfigPreProcessor {
                 result = {};
             }
 
-            if (nodeName != "import") {
+            if (nodeName != "import" && node != null) {
                 Reflect.setField(result, nodeName, processNode(node));
             }
         }
