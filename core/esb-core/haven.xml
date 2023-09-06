@@ -4,6 +4,9 @@
     <version>0.0.0</version>
 
     <commands>
+        <copy-config>
+            <copy-file source="${baseDir}/esb.json" destination="${configDir}/esb.json" />
+        </copy-config>
         <build>
             <haxe target="js" output="${buildDir}/esb-core.js" cleanUp="false" outputFilename="nodejs.hxml">
                 <dependencies>
@@ -32,8 +35,5 @@
                 </compiler-defines>
             </haxe>
         </build>
-        <install>
-            <copy-file source="${baseDir}/esb.json" destination="${configDir}/esb.json" />
-        </install>
     </commands>
 </project>
