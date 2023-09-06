@@ -7,6 +7,8 @@ extern class Logger {
     public function new(ref:String);
     public function info(message:String, data:Any = null):Void;
     public function warn(message:String, data:Any = null):Void;
+    public function error(message:String, data:Any = null):Void;
+    public function performance(message:String, data:Any = null):Void;
 }
 
 #else
@@ -21,10 +23,10 @@ class Logger {
         if (!_configured) {
             _configured = true;
             logging.LogManager.instance.addAdaptor(new logging.adaptors.ConsoleLogAdaptor({
-                levels: [logging.LogLevel.Info, logging.LogLevel.Warning, logging.LogLevel.Error]
+                levels: [logging.LogLevel.Info, logging.LogLevel.Warning, logging.LogLevel.Error, logging.LogLevel.Performance]
             }));
         }
-        _logger = new logging.Logger(null, StringTools.rpad(ref, " ", 30));
+        _logger = new logging.Logger(null, StringTools.rpad(ref, " ", 40));
     }
 
     public function info(message:String, data:Any = null) {
@@ -33,6 +35,14 @@ class Logger {
 
     public function warn(message:String, data:Any = null) {
         _logger.warn(message, data);
+    }
+
+    public function error(message:String, data:Any = null) {
+        _logger.error(message, data);
+    }
+
+    public function performance(message:String, data:Any = null) {
+        _logger.performance(message, data);
     }
 }
 
