@@ -77,7 +77,11 @@ class BundleLoader {
             return;
         }
 
-        for (depName in deps) {
+        for (depName in deps.keys()) {
+            var depItem = deps.get(depName);
+            if (depItem.disabled) {
+                continue;
+            }
             var depConfig = esb.core.config.sections.EsbConfig.get().bundles.get(depName);
             loadBundle(depConfig);
         }
@@ -101,5 +105,26 @@ class BundleLoader {
 
         js.Node.require("./" + bundleFile);
         log.info('auto loading bundle "${bundleConfig.name}" (file: "${bundleFile}")');
+
+        var bundle:IBundle = null;
+        var bundleClass = Type.resolveClass(bundleConfig.bundleEntryPoint);
+        if (bundleClass != null) {
+            bundle = Type.createInstance(bundleClass, []);
+            if (bundle != null) {
+            } else {
+                trace("ERROR: Could not create bundle instance");
+            }
+        } else {
+            trace("ERROR: Could not resolve bundle class: " + bundleConfig.bundleEntryPoint);
+        }
+
+        if (bundle == null) {
+            bundle = new Bundle();
+        }
+        if (bundle != null) {
+            bundle.classResolver = Type.resolveClass;
+            bundle.config = bundleConfig;
+            bundle.start();
+        }
     }
 }

@@ -13,7 +13,7 @@ extern class BundleConfig {
     public var disabled:Bool;
     public var prefixes:Map<String, BundlePrefixConfig>;
     public var routes:Map<String, BundleRouteConfig>;
-    public var dependencies:Array<String>;
+    public var dependencies:Map<String, BundleDependencyConfig>;
     public var properties:PropertiesConfig;
     
     public function hasPrefix(prefix:String, producer:Bool):Bool;
@@ -38,8 +38,8 @@ class BundleConfig {
     @:default(new Map<String, esb.core.config.sections.BundleRouteConfig>())
     @:optional public var routes:Map<String, BundleRouteConfig>;
 
-    @:default(new Array<String>())
-    @:optional public var dependencies:Array<String>;
+    @:default(new Map<String, esb.core.config.sections.BundleDependencyConfig>())
+    @:optional public var dependencies:Map<String, BundleDependencyConfig>;
     
     @:alias("properties") private var _properties:Map<String, String> = [];
     @:jignored public var properties:PropertiesConfig;
@@ -112,7 +112,6 @@ class BundleConfig {
         if (bundleFile != null) {
             bundleFile = @:privateAccess EsbConfig.applyPropertiesTo(bundleFile, this.properties);
         }
-
 
         for (prefixName in prefixes.keys()) {
             var prefix = prefixes.get(prefixName);
