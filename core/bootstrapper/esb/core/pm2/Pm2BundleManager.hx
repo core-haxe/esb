@@ -238,6 +238,7 @@ class Pm2BundleManager {
 
             Pm2.list((err, list) -> {
                 var finalUri = uri.clone();
+                // we'll flip round consumer / producer since its clearer when listing the bundles
                 if (finalUri.prefix == "producer") {
                     finalUri.prefix = "consumer";
                 } else if (finalUri.prefix == "consumer") {
