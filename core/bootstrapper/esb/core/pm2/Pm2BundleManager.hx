@@ -237,7 +237,16 @@ class Pm2BundleManager {
             */
 
             Pm2.list((err, list) -> {
-                var itemName = uri.asEndpoint();
+                var finalUri = uri.clone();
+                if (finalUri.prefix == "producer") {
+                    finalUri.prefix = "consumer";
+                } else if (finalUri.prefix == "consumer") {
+                    finalUri.prefix = "producer";
+                }
+                var itemName = finalUri.asEndpoint();
+                if (originalUri != null && uri.prefix != originalUri.prefix) {
+                    itemName = originalUri.prefix + "-" + itemName;
+                }
                 /*
                 if (producer) {
                     itemName = "[P] " + itemName;
