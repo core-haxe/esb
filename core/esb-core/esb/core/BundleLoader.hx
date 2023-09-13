@@ -14,7 +14,6 @@ class BundleLoader {
     }
 
     public static function load() {
-        //var bundleFile:String = js.node.Path.basename(js.Syntax.code("require.main.filename"));
         var bundleFile:String = js.node.Path.basename(js.Syntax.code("module.filename"));
         bundleFile = Path.normalize(bundleFile).split("/").pop();
 
@@ -99,32 +98,59 @@ class BundleLoader {
             bundleFile += ".js";
         }
 
-        if (bundleFile == js.node.Path.basename(js.Syntax.code("module.filename"))) {
+        var currentModule = js.node.Path.basename(js.Syntax.code("module.filename"));
+        if (bundleFile == currentModule) {
             return;
         }
 
-        js.Node.require("./" + bundleFile);
-        log.info('auto loading bundle "${bundleConfig.name}" (file: "${bundleFile}")');
-
+        log.info('auto loading bundle "${bundleConfig.name}" from "${currentModule}" (file: "${bundleFile}")');
         var bundle:IBundle = null;
-        var bundleClass = Type.resolveClass(bundleConfig.bundleEntryPoint);
-        if (bundleClass != null) {
-            bundle = Type.createInstance(bundleClass, []);
-            if (bundle != null) {
-            } else {
-                trace("ERROR: Could not create bundle instance");
-            }
-        } else {
-            trace("ERROR: Could not resolve bundle class: " + bundleConfig.bundleEntryPoint);
-        }
-
-        if (bundle == null) {
-            bundle = new Bundle();
-        }
+        bundle = resolveBundleClass(bundleConfig, bundleConfig.bundleEntryPoint, IBundle);
         if (bundle != null) {
+            // we dont actually need to load the bundle since, usually, it will have its own main function
+            // which will start the bundle, we might want to make the configurable though since _maybe_ (?)            
+            // we might want to load the bundle in some other way, though i cant think of a reason currentlys
+            /*
             bundle.classResolver = Type.resolveClass;
             bundle.config = bundleConfig;
             bundle.start();
+            */
         }
+    }
+
+    private static function resolveBundleClass<T>(bundleConfig:BundleConfig, className:String, classType:Class<T>):T {
+        if (bundleConfig == null) {
+            return null;
+        }
+        if (bundleConfig.bundleEntryPoint == null) {
+            return null;
+        }
+        var bundleFile = bundleConfig.bundleFile;
+        if (!bundleFile.endsWith(".js")) {
+            bundleFile += ".js";
+        }
+
+        if (bundleFile == js.node.Path.basename(js.Syntax.code("module.filename"))) {
+            return null;
+        }
+        
+        var bundleContext = js.Node.require("./" + bundleFile);
+
+        var classParts = className.split(".");
+        var refContext = bundleContext;
+        var found = true;
+        for (classPart in classParts) {
+            refContext = Reflect.field(refContext, classPart);
+            if (refContext == null) {
+                found = false;
+                break;
+            }
+        }
+
+        if (!found) {
+            return null;
+        }
+
+        return Type.createInstance(refContext, []);
     }
 }

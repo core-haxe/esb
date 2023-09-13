@@ -38,6 +38,7 @@ class Bus {
     private static var log:esb.logging.Logger = new esb.logging.Logger("esb.core.Bus");
 
     public static function from(uri:Uri, callback:Uri->Message<RawBody>->Promise<Message<RawBody>>) {
+        registerInternalMessageTypes();
         BundleLoader.autoLoadBundles();
 
         var effectiveUri = uri.clone();
@@ -107,6 +108,7 @@ class Bus {
     }
 
     public static function to(uri:Uri, message:Message<RawBody>):Promise<Message<RawBody>> {
+        registerInternalMessageTypes();
         BundleLoader.autoLoadBundles();
 
         return new Promise((resolve, reject) -> {
@@ -148,6 +150,7 @@ class Bus {
     private static var messageTypes:Map<String, Void->Message<RawBody>> = [];
     public static function registerMessageType<T:RawBody>(bodyType:Class<T>, ctor:Void->Message<T>) {
         var name = Type.getClassName(bodyType);
+        log.info('registering message type: ${name}');
         messageTypes.set(name, cast ctor);
     }
 
@@ -318,7 +321,10 @@ class Bus {
 
     private static var bodyConverters:Map<String, RawBody->RawBody> = [];
     public static function registerBodyConverter<T1:RawBody, T2:RawBody>(from:Class<T1>, to:Class<T2>, fn:T1->T2) {
-        var key = Type.getClassName(from) + "_to_" + Type.getClassName(to);
+        var fromName = Type.getClassName(from);
+        var toName = Type.getClassName(to);
+        log.info('registering body converter: ${fromName} => ${toName}');
+        var key = fromName + "_to_" + toName;
         bodyConverters.set(key, cast fn);
     }
 
