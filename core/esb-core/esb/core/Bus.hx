@@ -63,7 +63,7 @@ class Bus {
             fromQ.start().then(_ -> {
                 log.info('waiting for messages on "${endpoint}"');
                 fromQ.onMessage = (data:String) -> {
-                    log.info('message received on "${endpoint}", passing to consumer');
+                    log.debug('message received on "${endpoint}", passing to consumer');
                     return new Promise((resolve, reject) -> {
                         try {
                             var message = createMessage(RawBody);
@@ -150,7 +150,7 @@ class Bus {
     private static var messageTypes:Map<String, Void->Message<RawBody>> = [];
     public static function registerMessageType<T:RawBody>(bodyType:Class<T>, ctor:Void->Message<T>) {
         var name = Type.getClassName(bodyType);
-        log.info('registering message type: ${name}');
+        log.debug('registering message type: ${name}');
         messageTypes.set(name, cast ctor);
     }
 
@@ -223,7 +223,7 @@ class Bus {
         }
 
         if (esb.core.config.sections.EsbConfig.get().logging.verbose) {
-            log.info('converted message type from "${fromType}" to "${toType}"');
+            log.debug('converted message type from "${fromType}" to "${toType}"');
         }
         return cast newMessage;
     }
@@ -233,12 +233,12 @@ class Bus {
         var className = Type.getClassName(bodyType);
         if (messageTypes.exists(className)) {
             if (esb.core.config.sections.EsbConfig.get().logging.verbose) {
-                log.info('conversion to "${className}" is possibe');
+                log.debug('conversion to "${className}" is possibe');
             }
             return true;
         }
         if (esb.core.config.sections.EsbConfig.get().logging.verbose) {
-            log.info('conversion to "${className}" is NOT possibe');
+            log.debug('conversion to "${className}" is NOT possibe');
         }
         return false;
     }
@@ -276,7 +276,7 @@ class Bus {
         }
 
         if (esb.core.config.sections.EsbConfig.get().logging.verbose) {
-            log.info('converted message type from "${fromType}" to "${toType}"');
+            log.debug('converted message type from "${fromType}" to "${toType}"');
         }
         return cast newMessage;
 
@@ -323,7 +323,7 @@ class Bus {
     public static function registerBodyConverter<T1:RawBody, T2:RawBody>(from:Class<T1>, to:Class<T2>, fn:T1->T2) {
         var fromName = Type.getClassName(from);
         var toName = Type.getClassName(to);
-        log.info('registering body converter: ${fromName} => ${toName}');
+        log.debug('registering body converter: ${fromName} => ${toName}');
         var key = fromName + "_to_" + toName;
         bodyConverters.set(key, cast fn);
     }

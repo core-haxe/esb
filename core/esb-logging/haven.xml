@@ -12,6 +12,7 @@
                 </dependencies>
                 <class-paths>
                     <class-path>.</class-path>
+                    <class-path>../esb-config</class-path>
                 </class-paths>
                 <compiler-args>
                     <compiler-arg>--macro include('esb.logging')</compiler-arg>

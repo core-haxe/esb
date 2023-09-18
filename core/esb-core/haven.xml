@@ -27,6 +27,7 @@
                 <compiler-args>
                     <compiler-arg>--macro include('esb.core', false)</compiler-arg>
                     <compiler-arg>--macro include('esb.core.bodies', false)</compiler-arg>
+                    <compiler-arg>-cmd haxelib run haven copy-config</compiler-arg>
                 </compiler-args>
                 <compiler-defines>
                     <compiler-define>no-deprecation-warnings</compiler-define>

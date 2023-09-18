@@ -52,6 +52,7 @@
         }
     },
     "logging": {
+        "import": [".*logging.*\\.json"],
         "verbose": true
     },
     "properties": {

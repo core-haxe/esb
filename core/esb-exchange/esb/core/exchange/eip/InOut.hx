@@ -51,12 +51,12 @@ class InOut implements IExchangePattern {
                 var s = message.serialize();
                 if (producer) {
                     if (esb.core.config.sections.EsbConfig.get().logging.verbose) {
-                        log.info('sending message to output endpoint ${this.endpoint} (correlationId: ${message.correlationId})');
+                        log.debug('sending message to output endpoint ${this.endpoint} (correlationId: ${message.correlationId})');
                     }
                     outputQ.enqueue(s);
                 } else {
                     if (esb.core.config.sections.EsbConfig.get().logging.verbose) {
-                        log.info('sending message to response endpoint ${this.endpoint} (correlationId: ${message.correlationId})');
+                        log.debug('sending message to response endpoint ${this.endpoint} (correlationId: ${message.correlationId})');
                     }
                     responseQ.enqueue(s);
                     resolve(message);
@@ -111,12 +111,12 @@ class InOut implements IExchangePattern {
             var message = Bus.createMessage(RawBody);
             message.unserialize(data);
             if (esb.core.config.sections.EsbConfig.get().logging.verbose) {
-                log.info('message received on response queue for ${this.endpoint} (correlationId: ${message.correlationId})');
+                log.debug('message received on response queue for ${this.endpoint} (correlationId: ${message.correlationId})');
             }
             var info = _correlationMap.get(message.correlationId);
             if (info == null) {
                 if (esb.core.config.sections.EsbConfig.get().logging.verbose) {
-                    log.info("no correlation info");
+                    log.error("no correlation info");
                 }
                 responseQ.requeue(data);
                 resolve(true);

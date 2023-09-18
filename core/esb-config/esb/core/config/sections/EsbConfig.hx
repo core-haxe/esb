@@ -251,6 +251,7 @@ class EsbConfig {
         if (cache) {
             _config = config;
         }
+        //trace(haxe.Json.stringify(config));
         return config;
     }
 }

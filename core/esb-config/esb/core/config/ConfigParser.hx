@@ -26,6 +26,7 @@ class ConfigParser {
     public function parse(jsonString:String):EsbConfig {
         var preprocessor = new ConfigPreProcessor(jsonString, _cwd);
         var json = preprocessor.process();
+        //trace(json);
 
         var parser = new json2object.JsonParser<esb.core.config.sections.EsbConfig>();
         parser.fromJson(haxe.Json.stringify(json));
