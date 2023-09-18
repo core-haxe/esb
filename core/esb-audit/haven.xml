@@ -1,0 +1,41 @@
+<project>
+    <group>esb::core</group>
+    <name>esb-audit</name>
+    <version>0.0.0</version>
+
+    <commands>
+        <build>
+            <haxe target="js" output="${buildDir}/esb-audit.js" cleanUp="false" outputFilename="nodejs.hxml">
+                <dependencies>
+                    <dependency>promises</dependency>
+                    <dependency>hxnodejs</dependency>
+                    <!--
+                    <dependency>queues-core</dependency>
+                    -->
+                </dependencies>
+                <class-paths>
+                    <class-path>.</class-path>
+                    <class-path>../esb-core</class-path>
+                    <class-path>../../common/esb-common</class-path>
+                    <!--
+                    <class-path>../esb-queues</class-path>
+                    <class-path>../esb-logging</class-path>
+                    <class-path>../esb-exchange</class-path>
+                    <class-path>../bootstrapper</class-path>
+                    <class-path>../esb-ipc</class-path>
+                    <class-path>../esb-config</class-path>
+                    <class-path>../../common/esb-common</class-path>
+                    -->
+                </class-paths>
+                <compiler-args>
+                    <compiler-arg>--macro include('esb.audit')</compiler-arg>
+                </compiler-args>
+                <compiler-defines>
+                    <compiler-define>no-deprecation-warnings</compiler-define>
+                    <compiler-define>esb-core-audit-impl</compiler-define>
+                    <compiler-define>shallow-expose</compiler-define>
+                </compiler-defines>
+            </haxe>
+        </build>
+    </commands>
+</project>
