@@ -11,5 +11,6 @@
         <module>esb-ipc</module>
         <module>esb-logging</module>
         <module>esb-queues</module>
+        <module>esb-audit</module>
     </modules>
 </project>

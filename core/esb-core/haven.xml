@@ -22,6 +22,7 @@
                     <class-path>../bootstrapper</class-path>
                     <class-path>../esb-ipc</class-path>
                     <class-path>../esb-config</class-path>
+                    <class-path>../esb-audit</class-path>
                     <class-path>../../common/esb-common</class-path>
                 </class-paths>
                 <compiler-args>

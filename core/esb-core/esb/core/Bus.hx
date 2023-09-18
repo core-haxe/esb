@@ -77,9 +77,15 @@ class Bus {
                             if (message.properties.exists(BusProperties.DestinationUri)) {
                                 destUri = Uri.fromString(message.properties.get(BusProperties.DestinationUri));
                             }
+                            finalMessage.properties.set("audit.from.direction", "request");
+                            finalMessage.timestamp();
+                            esb.audit.MessageAuditor.audit(finalMessage);
                             callback(destUri, finalMessage).then(result -> {
                                 esb.core.exchange.ExchangePatternFactory.create(endpoint, false).then(exchangePattern -> {
                                     exchangePattern.sendMessage(result).then(_ -> {
+                                        result.properties.set("audit.from.direction", "response");
+                                        finalMessage.timestamp();
+                                        esb.audit.MessageAuditor.audit(result);
                                         resolve(true);
                                     }, error -> {
                                         reject(error);
