@@ -204,6 +204,15 @@ class UriObject {
         domain = replaceParts(domain, uri);
         portString = replaceParts(portString, uri);
         path = replaceParts(path, uri);
+        if (params != null) {
+            for (key in params.keys()) {
+                var value = params.get(key);
+                var newValue = replaceParts(value, uri);
+                if (value != newValue) {
+                    params.set(key, newValue);
+                }
+            }
+        }
     }
 
     private function replaceParts(s:String, uri:Uri):String {
