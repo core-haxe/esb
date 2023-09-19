@@ -77,15 +77,12 @@ class Bus {
                             if (message.properties.exists(BusProperties.DestinationUri)) {
                                 destUri = Uri.fromString(message.properties.get(BusProperties.DestinationUri));
                             }
-                            finalMessage.properties.set("audit.from.direction", "request");
-                            finalMessage.timestamp();
-                            esb.audit.MessageAuditor.audit(finalMessage);
+                            auditMessage(finalMessage, ["audit.from.direction" => "request"]);
+                            var eip = finalMessage.properties.get("bus.eip");
                             callback(destUri, finalMessage).then(result -> {
-                                esb.core.exchange.ExchangePatternFactory.create(endpoint, false).then(exchangePattern -> {
+                                auditMessage(result, ["audit.from.direction" => "response"]);
+                                esb.core.exchange.ExchangePatternFactory.create(endpoint, false, eip).then(exchangePattern -> {
                                     exchangePattern.sendMessage(result).then(_ -> {
-                                        result.properties.set("audit.from.direction", "response");
-                                        finalMessage.timestamp();
-                                        esb.audit.MessageAuditor.audit(result);
                                         resolve(true);
                                     }, error -> {
                                         reject(error);
@@ -117,6 +114,13 @@ class Bus {
         registerInternalMessageTypes();
         BundleLoader.autoLoadBundles();
 
+        if (!message.properties.exists(Message.PropertyMessageId)) {
+            message.properties.set(Message.PropertyMessageId, esb.common.Uuid.generate());
+        }
+        if (message.breacrumbs().length == 0) {
+            message.addBreadcrumb();
+        }
+
         return new Promise((resolve, reject) -> {
             var effectiveUri = uri.clone();
             message.properties.set(BusProperties.DestinationUri, uri.toString());
@@ -131,11 +135,14 @@ class Bus {
             }
 
             message = copyMessage(message, Type.getClass(message.body));
+            var eip = message.properties.get("bus.eip");
+            auditMessage(message, ["audit.to.direction" => "request"]);
             BundleManager.startEndpoint(effectiveUri, false, uri).then(_ -> {
                 var endpoint = effectiveUri.asEndpoint();
-                esb.core.exchange.ExchangePatternFactory.create(endpoint, true).then(exchangePattern -> {
+                esb.core.exchange.ExchangePatternFactory.create(endpoint, true, eip).then(exchangePattern -> {
                     var correlationId = message.correlationId;
                     exchangePattern.sendMessage(message).then(response -> {
+                        auditMessage(response, ["audit.to.direction" => "response"]);
                         if (correlationId != null) {
                             response.correlationId = correlationId;
                         }
@@ -151,6 +158,25 @@ class Bus {
                 reject(error);
             });
         });
+    }
+
+    private static function auditMessage(message:Message<RawBody>, properties:Map<String, Any> = null) {
+        if (message.properties.exists("audit.skip") && message.properties.get("audit.skip") == true) {
+            return;
+        }
+
+        var copy = copyMessage(message, Type.getClass(message.body));
+        copy.timestamp();
+        if (properties != null) {
+            for (key in properties.keys()) {
+                copy.properties.set(key, properties.get(key));
+            }
+        }
+        var bundleFile:String = js.node.Path.basename(js.Syntax.code("require.main.filename"));
+        bundleFile = haxe.io.Path.normalize(bundleFile).split("/").pop().split(".").shift();
+        copy.properties.set("audit.bundle", bundleFile);
+
+        esb.audit.MessageAuditor.audit(copy);
     }
 
     private static var messageTypes:Map<String, Void->Message<RawBody>> = [];
@@ -191,7 +217,9 @@ class Bus {
         newMessage.correlationId = message.correlationId;
         newMessage.headers = message.headers.copy();
         newMessage.properties = message.properties.copy();
-        newMessage.body.fromBytes(message.body.toBytes());
+        if (message.body != null) {
+            newMessage.body.fromBytes(message.body.toBytes());
+        }
 
         return cast newMessage;
     }

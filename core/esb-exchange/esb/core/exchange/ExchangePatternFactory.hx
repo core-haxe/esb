@@ -6,7 +6,7 @@ import promises.Promise;
 
 @:jsRequire("./esb-exchange.js", "esb.core.exchange.ExchangePatternFactory")
 extern class ExchangePatternFactory {
-    public static function create(endpoint:String, producer:Bool):Promise<IExchangePattern>;
+    public static function create(endpoint:String, producer:Bool, eip:String = null):Promise<IExchangePattern>;
 }
 
 #else
@@ -18,17 +18,20 @@ class ExchangePatternFactory {
     private static var _cache:Map<String, IExchangePattern> = [];
     private static var _initializingMap:Map<String, Array<{resolve: Dynamic, reject: Dynamic}>> = [];
 
-    public static function create(endpoint:String, producer:Bool):Promise<IExchangePattern> {
+    public static function create(endpoint:String, producer:Bool, eip:String = null):Promise<IExchangePattern> {
         return new Promise((resolve, reject) -> {
-            var eip = "InOut";
-
+            if (eip == null) {
+                eip = "inout";
+            }
+            eip = eip.toLowerCase();
+    
             if (!useCache) {
-                var exchange:IExchangePattern = new esb.core.exchange.eip.InOut(endpoint, producer);
+                var exchange:IExchangePattern = createExchangePattern(eip, endpoint, producer);
                 exchange.init().then(_ -> {
                     resolve(exchange);
                     return null;
                 }, error -> {
-
+                    trace("error", error);
                 });
             } else {
                 var cacheKey = endpoint + "_" + eip + "_" + (producer == true ? "producer" : "consumer");
@@ -39,7 +42,7 @@ class ExchangePatternFactory {
                 var exchange:IExchangePattern = _cache.get(cacheKey);
                 if (exchange == null) {
                     _initializingMap.set(cacheKey, []);
-                    exchange = new esb.core.exchange.eip.InOut(endpoint, producer);
+                    exchange = createExchangePattern(eip, endpoint, producer);
                     exchange.init().then(_ -> {
                         for (details in _initializingMap.get(cacheKey)) {
                             details.resolve(exchange);
@@ -49,13 +52,21 @@ class ExchangePatternFactory {
                         resolve(exchange);
                         return null;
                     }, error -> {
-
+                        trace("error", error);
                     });
                 } else {
                     resolve(exchange);
                 }
             }
         });
+    }
+
+    private static function createExchangePattern(eip:String, endpoint:String, producer:Bool):IExchangePattern {
+        return switch (eip) {
+            case "inout":   new esb.core.exchange.eip.InOut(endpoint, producer);
+            case "inonly":  new esb.core.exchange.eip.InOnly(endpoint, producer);
+            case _:         new esb.core.exchange.eip.InOut(endpoint, producer);
+        }
     }
 }
 

@@ -2,33 +2,23 @@ package esb.audit;
 
 import esb.core.bodies.RawBody;
 import esb.core.Message;
-
-#if !esb_core_audit_impl
-
-@:jsRequire("./esb-audit.js", "esb.audit.MessageAuditor")
-extern class MessageAuditor {
-    public static function audit(message:Message<RawBody>):Void;
-}
-
-#else
+import esb.core.Bus.*;
 
 @:expose
 @:native("esb.audit.MessageAuditor")
 class MessageAuditor {
     public static function audit(message:Message<RawBody>) {
-        trace("-----------------------------------------------------------------------------------");
-        trace(message);
-        if (message.body == null) {
-            trace("body is null");
-        } else {
-            trace(message.body.toString());
+        if (message.properties.exists("audit.skip") && message.properties.get("audit.skip") == true) {
+            return;
         }
-        trace(message.headers);
-        trace(message.properties);
-        trace("HASH: ", message.hash());
-        trace("BODY HASH: ", message.bodyHash());
-        trace("-----------------------------------------------------------------------------------");
+        var copy = copyMessage(message, RawBody);
+        var newProperties:Map<String, Any> = [];
+        for (key in copy.properties.keys()) {
+            newProperties.set("$$" + key + "$$", copy.properties.get(key));
+        }
+        copy.properties = newProperties;
+        copy.properties.set("audit.skip", true);
+        copy.properties.set("bus.eip", "InOnly");
+        to("audit-db://impact-esb", copy);
     }
 }
-
-#end
