@@ -71,6 +71,12 @@ class BundleManager {
                 }
                 _deferredStartEndpoint = newList;
             }
+
+            if (_deferredStartEndpoint.length > 0) {
+                var details = _deferredStartEndpoint.shift();
+                _startEndpoint(details.uri, details.producer, details.originalUri, details.resolve, details.reject);
+            }
+
             return;
         }
 
