@@ -80,10 +80,10 @@ It needs to register Message Type with the `registerMessageType` function.  It w
 
 ```haxe
 registerMessageType(bundles.xlsx.bodies.XlsxBody, () -> {
-            var m = @:privateAccess new Message<bundles.xlsx.bodies.XlsxBody>();
-            m.body = new bundles.xlsx.bodies.XlsxBody();
-            return cast m;
-        });
+    var m = @:privateAccess new Message<bundles.xlsx.bodies.XlsxBody>();
+    m.body = new bundles.xlsx.bodies.XlsxBody();
+    return cast m;
+});
 ```
 
 
@@ -95,18 +95,18 @@ It can also register the message transformations with `registerBodyConverter`
 For example, `esb-bundle-xlsx` registers the `xlsx` to `csv` converter.
 ```haxe
 registerBodyConverter(bundles.xlsx.bodies.XlsxSheet, CsvBody, (sheet) -> {
-            var firstRow = null;
-            var csv = new CsvBody();
-            for (row in sheet.rows()) {
-                if (firstRow == null) {
-                    firstRow = row;
-                    csv.addColumns(firstRow);
-                } else {
-                    csv.addRow(row);
-                }
-            }
-            return csv;
-        });
+    var firstRow = null;
+    var csv = new CsvBody();
+    for (row in sheet.rows()) {
+        if (firstRow == null) {
+            firstRow = row;
+            csv.addColumns(firstRow);
+        } else {
+            csv.addRow(row);
+        }
+    }
+    return csv;
+});
 ```
 
 
@@ -140,19 +140,19 @@ You register the routes in the json config.
 Here's a route that check if there are zip files is a specific folder and unzips them in another folder.
 
 ```haxe
-    new Route(routeContext)
-            .from("file://{{download.path}}?pattern=*.zip&renameExtension=complete&pollInterval=5000")
-            .log("found temporaris hr zip file")
-            .convertTo(ZipBody)
-            .loop(_(body.entries))
-                .property("file.name", _(body.name))
-                .property("file.extension", _(body.extension))
-                .property("file.hash", _(body.hash))
-                .log("extracted file from zip  to '${body.name}.${body.extension}'")
-                .body(_(body.data), RawBody)
-                .to("file://{{unzipfolder.path}}?filename={file.name}-{file.hash}.{file.extension}")
-            .end()
-        .start();
+new Route(routeContext)
+    .from("file://{{download.path}}?pattern=*.zip&renameExtension=complete&pollInterval=5000")
+    .log("found temporaris hr zip file")
+    .convertTo(ZipBody)
+    .loop(_(body.entries))
+        .property("file.name", _(body.name))
+        .property("file.extension", _(body.extension))
+        .property("file.hash", _(body.hash))
+        .log("extracted file from zip  to '${body.name}.${body.extension}'")
+        .body(_(body.data), RawBody)
+        .to("file://{{unzipfolder.path}}?filename={file.name}-{file.hash}.{file.extension}")
+    .end()
+.start();
 ```
 
 The Route has a defined starting point ".from"  and has a defined ending point  ".to"
