@@ -72,11 +72,17 @@ It will call the function named `start` in the entry points
 
 A bundle can contain services that transform a message into another message.
 
-For example, `esb-bundle-xlsx` accepts an xlsx message body as as incoming format  and can convert them into a CSV message body
+There are a few existing already done bundles 
+    - `esb-bundle-xlsx` which accepts an xlsx message body as as incoming format  and can convert them into a CSV message body
+    - `esb-bundle-zip`
+    - `esb-bundle-chatgpt`
+    - `esb-bundle-deepl`
 
 ### Registering the accepted body type of the bundle 
 
 It needs to register Message Type with the `registerMessageType` function.  It will basically register the message *body* type to the ESB, so that bus knows that this bundle is the one that consume (is recipient) these messages.
+
+For example, `esb-bundle-xlsx` registers the `xlsx` body type;
 
 ```haxe
 registerMessageType(bundles.xlsx.bodies.XlsxBody, () -> {
@@ -162,12 +168,20 @@ The route is described with the HPEL ( Haxe Process Execution Language) DSL  .
 
 ## Creating new URIs
 
+There are already many bundles for different URI.
+
+    esb-bundle-files
+    esb-bundle-http
+    esb-bundle-ftp
+    esb-bundle-sqlite
+    esb-bundle-cron
+
 
 ### Registering the URIs to the ESB in  the JSON config.
 
 
-Here is the how the prefix `file`` that was used in a route URI `.from("file://{{download.path}}?pattern=*.zip&renameExtension=complete&pollInterval=5000")`
-is registered.
+Here is the how the prefix `file` that was used in a route URI `.from("file://{{download.path}}?pattern=*.zip&renameExtension=complete&pollInterval=5000")`
+was registered.
 
 ```json
 {
