@@ -8,6 +8,7 @@ import esb.core.Bus.*;
 @:native("esb.audit.MessageAuditor")
 class MessageAuditor {
     public static function audit(message:Message<RawBody>) {
+        /*
         if (message.properties.exists("audit.skip") && message.properties.get("audit.skip") == true) {
             return;
         }
@@ -20,5 +21,6 @@ class MessageAuditor {
         copy.properties.set("audit.skip", true);
         copy.properties.set("bus.eip", "InOnly");
         to("audit-db://impact-esb", copy);
+        */
     }
 }
