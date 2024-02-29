@@ -138,7 +138,7 @@ class Pm2BundleManager {
         return new Promise((resolve, reject) -> {
             var bundleConfig = EsbConfig.get().findBundleFromPrefix(originalUri.prefix, producer);
             if (bundleConfig == null) {
-                reject("no bundle config found");
+                reject("no bundle config found for '" + originalUri.prefix + "'");
                 return;
             }
 
