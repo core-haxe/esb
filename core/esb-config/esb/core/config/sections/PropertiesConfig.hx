@@ -9,6 +9,7 @@ extern class PropertiesConfig {
     public function new();
     public function get(name:String, defaultValue:String = null, params:Map<String, Any> = null):String;
     public function int(name:String, defaultValue:Null<Int> = null, params:Map<String, Any> = null):Null<Int>;
+    public function bool(name:String, defaultValue:Null<Bool> = null, params:Map<String, Any> = null):Null<Bool>;
     public function keys():Iterator<String>;
 }
 
@@ -60,6 +61,14 @@ class PropertiesConfig {
             return defaultValue;
         }
         return Std.parseInt(v);
+    }
+
+    public function bool(name:String, defaultValue:Null<Bool> = null, params:Map<String, Any> = null):Null<Bool> {
+        var v = get(name, null, params);
+        if (v == null) {
+            return defaultValue;
+        }
+        return v.toLowerCase() == "true";
     }
 
     public function keys():Iterator<String> {
