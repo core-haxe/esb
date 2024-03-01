@@ -11,6 +11,14 @@
                         "internal": true
                     }
                 },
+                "bus": {
+                    "consumer": {
+                        "internal": true
+                    },
+                    "producer": {
+                        "internal": true
+                    }
+                },
                 "consumer": {
                     "consumer": {
                         "internal": true
