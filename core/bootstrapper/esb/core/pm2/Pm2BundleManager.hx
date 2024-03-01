@@ -55,7 +55,15 @@ class Pm2BundleManager {
 
                 var alreadyExists = false;
                 var alreadyRunning = false;
+                var runningInstances = [];
+                var maxInstances = 1;
+                if (bundleConfig.instances != null) {
+                    maxInstances = bundleConfig.instances;
+                }
                 for (item in list) {
+                    if (Std.string(item.name).startsWith(itemName)) {
+                        runningInstances.push(item.name);
+                    }
                     if (item.name == itemName) {
                         alreadyExists = true;
                         if (item.pid != 0) {
@@ -65,35 +73,41 @@ class Pm2BundleManager {
                     }
                 }
 
-                if (!alreadyExists) {
-                    log.info('bundle ${itemName} doesnt exist, starting (${bundleFile})');
-                    var details:Dynamic = {
-                        name: itemName,
-                        script: bundleFile,
-                        args: [],
-                        watch: true
+                var instancesToStart = maxInstances - runningInstances.length;
+                if (instancesToStart > 0) {
+                    for (i in 0...instancesToStart) {
+                        var instanceName = itemName + "-" + i;
+                        if (maxInstances == 1) {
+                            instanceName = itemName;
+                        }
+                        log.info('bundle ${itemName} doesnt exist, starting (${bundleFile})');
+                        var details:Dynamic = {
+                            name: instanceName,
+                            script: bundleFile,
+                            args: [],
+                            watch: true,
+                            pmx: false
+                        }
+                        Pm2.start(details, (err, app) -> {
+                            if (err != null) {
+                                trace(">>>>>>>>>>>>>>>> ERROR STARTING BUNDLE: " + err);
+                            }
+                        });
                     }
-                    Pm2.start(details, (err, app) -> {
-                        if (err != null) {
-                            trace(err);
-                            return;
-                        } else {
-                            resolve(true);
-                        }
-                    });
-                } else if (!alreadyRunning) {
-                    log.info('bundle ${itemName} exists but isnt running, restarting');
-                    Pm2.restart(itemName, (err, proc) -> {
-                        if (err != null) {
-                            trace(err);
-                            return;
-                        } else {
-                            resolve(true);
-                        }
-                    });
-                } else {
-                    resolve(true);
+                } else if (instancesToStart < 0) {
+                    var reverseInstances = runningInstances.copy();
+                    reverseInstances.reverse();
+                    for (i in 0...Std.int(Math.abs(instancesToStart))) {
+                        var instanceName = reverseInstances[i];
+                        Pm2.delete(instanceName, (err, app) -> {
+                            if (err != null) {
+                                trace(">>>>>>>>>>>>>>>> ERROR DELETING BUNDLE: " + err);
+                            }
+                        });
+                    }
                 }
+
+                resolve(true);
             });
         });
     }

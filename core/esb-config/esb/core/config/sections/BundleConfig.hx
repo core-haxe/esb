@@ -11,6 +11,7 @@ extern class BundleConfig {
     public var autoStart:Bool;
     public var autoLoad:Bool;
     public var disabled:Bool;
+    public var instances:Null<Int>;
     public var prefixes:Map<String, BundlePrefixConfig>;
     public var routes:Map<String, BundleRouteConfig>;
     public var dependencies:Map<String, BundleDependencyConfig>;
@@ -31,6 +32,7 @@ class BundleConfig {
     @:alias("auto-start") public var autoStart:Bool;
     @:alias("auto-load") public var autoLoad:Bool;
     public var disabled:Bool;
+    public var instances:Null<Int>;
 
     @:default(new Map<String, esb.core.config.sections.BundlePrefixConfig>())
     @:optional public var prefixes:Map<String, BundlePrefixConfig>;
