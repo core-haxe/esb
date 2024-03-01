@@ -16,6 +16,7 @@ using StringTools;
 @:jsRequire("./esb-core.js", "esb.core.Bus")
 extern class Bus {
     public static function from(uri:Uri, callback:Uri->Message<RawBody>->Promise<Message<RawBody>>):Void;
+    public static function registerDirectConsumer(uri:Uri, callback:Uri->Message<RawBody>->Promise<Message<RawBody>>):Void;
     public static function to(uri:Uri, message:Message<RawBody>):Promise<Message<RawBody>>;
 
     public static function registerMessageType<T:RawBody>(bodyType:Class<T>, ctor:Void->Message<T>):Void;
@@ -110,6 +111,13 @@ class Bus {
         });
     }
 
+    private static var directUriConsumers:Map<String, Uri->Message<RawBody>->Promise<Message<RawBody>>> = [];
+    public static function registerDirectConsumer(uri:Uri, callback:Uri->Message<RawBody>->Promise<Message<RawBody>>) {
+        var key = uri.asEndpoint();
+        log.info('registering direct consumer ${key}');
+        directUriConsumers.set(key, callback);
+    }
+
     public static function to(uri:Uri, message:Message<RawBody>):Promise<Message<RawBody>> {
         registerInternalMessageTypes();
         BundleLoader.autoLoadBundles();
@@ -137,26 +145,43 @@ class Bus {
             message = copyMessage(message, Type.getClass(message.body));
             var eip = message.properties.get("bus.eip");
             auditMessage(message, ["audit.to.direction" => "request"]);
-            BundleManager.startEndpoint(effectiveUri, false, uri).then(_ -> {
-                var endpoint = effectiveUri.asEndpoint();
-                esb.core.exchange.ExchangePatternFactory.create(endpoint, true, eip).then(exchangePattern -> {
-                    var correlationId = message.correlationId;
-                    exchangePattern.sendMessage(message).then(response -> {
-                        auditMessage(response, ["audit.to.direction" => "response"]);
-                        if (correlationId != null) {
-                            response.correlationId = correlationId;
-                        }
-                        resolve(response);
+
+            var directConsumerKey = uri.asEndpoint();
+            var directConsumer = directUriConsumers.get(directConsumerKey);
+            if (directConsumer != null) {
+                log.debug('sending direct message to ${directConsumerKey}');
+                var correlationId = message.correlationId;
+                directConsumer(uri, message).then(response -> {
+                    log.debug('response message received from direct endpoint ${directConsumerKey}');
+                    if (correlationId != null) {
+                        response.correlationId = correlationId;
+                    }
+                    resolve(response);
+                }, error -> {
+                    reject(error);
+                });
+            } else {
+                BundleManager.startEndpoint(effectiveUri, false, uri).then(_ -> {
+                    var endpoint = effectiveUri.asEndpoint();
+                    esb.core.exchange.ExchangePatternFactory.create(endpoint, true, eip).then(exchangePattern -> {
+                        var correlationId = message.correlationId;
+                        exchangePattern.sendMessage(message).then(response -> {
+                            auditMessage(response, ["audit.to.direction" => "response"]);
+                            if (correlationId != null) {
+                                response.correlationId = correlationId;
+                            }
+                            resolve(response);
+                        }, error -> {
+                            reject(error);
+                        });
                     }, error -> {
                         reject(error);
                     });
                 }, error -> {
+                    trace("error", error);
                     reject(error);
                 });
-            }, error -> {
-                trace("error", error);
-                reject(error);
-            });
+            }
         });
     }
 
